@@ -1,0 +1,1655 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ventilator Navigator｜成人呼吸器模式互動決策與教學助手</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        warmbg: "#FDFBF7",
+                        warmcard: "#FFFFFF",
+                        warmborder: "#E2E8F0",
+                        brand: {
+                            50: "#FFFBEB",
+                            100: "#FEF3C7",
+                            500: "#D97706",
+                            600: "#B45309",
+                            700: "#92400E",
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome CDN for Medical Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background-color: #FDFBF7;
+            color: #1F2937;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans TC", sans-serif;
+        }
+        .card-shadow {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+        }
+        .step-active {
+            border-color: #D97706;
+            background-color: #FEF3C7;
+            color: #92400E;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between antialiased selection:bg-amber-100">
+
+    <!-- TOP NAVIGATION BAR -->
+    <header class="sticky top-0 z-50 bg-white/90 backdrop-blur border-b border-amber-100 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3 cursor-pointer" onclick="navigateTo('home')">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-600 to-amber-500 flex items-center justify-center text-white shadow font-bold text-xl">
+                    <i class="fa-solid fa-lungs"></i>
+                </div>
+                <div>
+                    <span class="font-bold text-lg text-gray-900 tracking-tight">Ventilator Navigator</span>
+                    <span class="hidden md:inline-block ml-2 text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200">成人呼吸器模式決策助手</span>
+                </div>
+            </div>
+
+            <!-- MODE TOGGLE & NAVIGATION -->
+            <div class="flex items-center space-x-2 sm:space-x-4">
+                <!-- Guided / Expert Mode Switcher -->
+                <div class="bg-gray-100 p-1 rounded-lg flex items-center text-xs font-medium border border-gray-200">
+                    <button id="mode-btn-guided" onclick="setAppUserMode('guided')" class="px-3 py-1.5 rounded-md text-amber-900 bg-white shadow-xs font-semibold flex items-center gap-1">
+                        <i class="fa-solid fa-graduation-cap"></i> Guided Mode
+                    </button>
+                    <button id="mode-btn-expert" onclick="setAppUserMode('expert')" class="px-3 py-1.5 rounded-md text-gray-600 hover:text-gray-900 flex items-center gap-1">
+                        <i class="fa-solid fa-user-doctor"></i> Expert Mode
+                    </button>
+                </div>
+
+                <!-- Navigation Links -->
+                <nav class="hidden lg:flex items-center space-x-1 text-sm font-medium text-gray-600">
+                    <button onclick="navigateTo('home')" class="px-3 py-2 rounded-md hover:bg-gray-100">首頁</button>
+                    <button onclick="navigateTo('assessment')" class="px-3 py-2 rounded-md hover:bg-gray-100">新評估 Assessment</button>
+                    <button onclick="navigateTo('compare')" class="px-3 py-2 rounded-md hover:bg-gray-100">Mode 比較 Compare</button>
+                    <button onclick="navigateTo('learning')" class="px-3 py-2 rounded-md hover:bg-gray-100">教學案例 Cases</button>
+                </nav>
+
+                <!-- Load Example & Reset -->
+                <div class="flex items-center space-x-1">
+                    <button onclick="loadExamplePatient()" title="載入 ARDS 典型示範個案" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-200 flex items-center gap-1">
+                        <i class="fa-solid fa-folder-open"></i> <span class="hidden sm:inline">載入範例</span>
+                    </button>
+                    <button onclick="resetPatientData()" title="重置數據" class="px-2.5 py-1.5 rounded-lg text-xs font-medium text-gray-600 hover:bg-gray-100 border border-gray-200 flex items-center gap-1">
+                        <i class="fa-solid fa-rotate-left"></i> <span class="hidden sm:inline">重置</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT CONTAINER -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+        <!-- ================= PAGE 1: HOME PAGE ================= -->
+        <section id="page-home" class="space-y-10">
+            <!-- Hero Banner -->
+            <div class="bg-gradient-to-r from-amber-700 via-amber-600 to-amber-800 rounded-3xl p-8 sm:p-12 text-white shadow-xl relative overflow-hidden">
+                <div class="absolute -right-10 -bottom-10 opacity-10 text-white text-9xl">
+                    <i class="fa-solid fa-lungs"></i>
+                </div>
+                <div class="max-w-3xl space-y-4 relative z-10">
+                    <span class="inline-block px-3 py-1 rounded-full bg-white/20 text-xs font-semibold tracking-wide backdrop-blur border border-white/20">Adult Mechanical Ventilation Decision Support</span>
+                    <h1 class="text-3xl sm:text-5xl font-extrabold tracking-tight leading-tight">
+                        Ventilator Navigator<br/>
+                        <span class="text-amber-200 font-bold">成人呼吸器模式互動決策助手</span>
+                    </h1>
+                    <p class="text-lg text-amber-100 font-light leading-relaxed">
+                        「從病人生理需求出發，而不是從呼吸器 Mode 名稱出發。」<br/>
+                        結合臨床生理推理、肺保護通氣指引與不同步評估，為 ICU 醫療團隊提供透明、可追溯的個人化通氣輔助。
+                    </p>
+                    
+                    <div class="pt-4 flex flex-wrap gap-4">
+                        <button onclick="navigateTo('assessment')" class="px-6 py-3.5 rounded-xl bg-white text-amber-900 font-bold hover:bg-amber-50 shadow-lg hover:shadow-xl transition flex items-center gap-2">
+                            <i class="fa-solid fa-circle-play text-amber-600"></i> 開始新個案 Start Assessment
+                        </button>
+                        <button onclick="navigateTo('learning')" class="px-6 py-3.5 rounded-xl bg-amber-800/80 hover:bg-amber-800 text-white font-semibold backdrop-blur border border-white/30 transition flex items-center gap-2">
+                            <i class="fa-solid fa-graduation-cap"></i> 快速教學模式 Learning Mode
+                        </button>
+                        <button onclick="navigateTo('compare')" class="px-6 py-3.5 rounded-xl bg-amber-800/80 hover:bg-amber-800 text-white font-semibold backdrop-blur border border-white/30 transition flex items-center gap-2">
+                            <i class="fa-solid fa-code-compare"></i> Mode 比較 Compare Modes
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Features Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="bg-white p-6 rounded-2xl border border-amber-100 shadow-sm space-y-3">
+                    <div class="w-12 h-12 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center text-xl font-bold">
+                        <i class="fa-solid fa-brain"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-gray-900">生理導向推理 Decision Engine</h3>
+                    <p class="text-sm text-gray-600 leading-relaxed">
+                        非簡單對照表。結合氧合 (Oxygenation)、通氣 (Ventilation)、肺力學 (Mechanics) 與自主呼吸驅動 (Drive)，分析核心生理難題。
+                    </p>
+                </div>
+
+                <div class="bg-white p-6 rounded-2xl border border-amber-100 shadow-sm space-y-3">
+                    <div class="w-12 h-12 rounded-xl bg-red-100 text-red-700 flex items-center justify-center text-xl font-bold">
+                        <i class="fa-solid fa-shield-halved"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-gray-900">即時高危警訊 Safety Dashboard</h3>
+                    <p class="text-sm text-gray-600 leading-relaxed">
+                        偵測高平台壓 ($P_{plat} > 30$)、高驅動壓 ($\Delta P > 14$)、Auto-PEEP、嚴重酸失衡代償流失與休克風險，優先突顯紅燈床邊檢視警示。
+                    </p>
+                </div>
+
+                <div class="bg-white p-6 rounded-2xl border border-amber-100 shadow-sm space-y-3">
+                    <div class="w-12 h-12 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center text-xl font-bold">
+                        <i class="fa-solid fa-sliders"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-gray-900">雙重使用模式 Guided / Expert</h3>
+                    <p class="text-sm text-gray-600 leading-relaxed">
+                        初學者可透過 Step-by-Step 引導模式與 ⓘ 生理說明逐步學習；重症專科醫師可切換至 Expert Mode 快速輸入分析。
+                    </p>
+                </div>
+            </div>
+
+            <!-- Disclaimer Banner -->
+            <div class="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-xs text-amber-900 flex items-start gap-3">
+                <i class="fa-solid fa-triangle-exclamation text-amber-600 text-lg mt-0.5"></i>
+                <div class="space-y-1">
+                    <p class="font-bold">臨床安全與聲明 (Clinical Education & Decision Support Disclaimer)</p>
+                    <p>本工具為臨床決策輔助與教學示範系統，非獨立自主治療系統。任何建議均不可取代 ICU 專科醫師、胸腔科醫師或呼吸治療師 (RT) 之即時床邊臨床評估與判斷。</p>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- ================= PAGE 2: ASSESSMENT ================= -->
+        <section id="page-assessment" class="hidden space-y-6">
+
+            <!-- WIZARD STEP HEADER / PROGRESS BAR (Guided Mode) -->
+            <div id="wizard-progress-container" class="bg-white p-4 sm:p-6 rounded-2xl border border-gray-200 shadow-xs space-y-3">
+                <div class="flex items-center justify-between text-xs sm:text-sm font-semibold text-gray-700">
+                    <span id="wizard-step-title" class="text-amber-800 font-bold">Step 1 / 13: Patient Profile</span>
+                    <span id="wizard-step-percent" class="text-amber-600">8% Completed</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
+                    <div id="wizard-progress-bar" class="bg-gradient-to-r from-amber-500 to-amber-700 h-2.5 rounded-full transition-all duration-300" style="width: 8%;"></div>
+                </div>
+                <!-- Step Breadcrumb Chips -->
+                <div class="hidden md:flex flex-wrap gap-1.5 pt-1 text-xs">
+                    <span id="chip-step-1" class="px-2 py-1 rounded bg-amber-100 text-amber-800 font-medium">1. Demographics</span>
+                    <span id="chip-step-2" class="px-2 py-1 rounded bg-gray-100 text-gray-600">2. Indications</span>
+                    <span id="chip-step-3" class="px-2 py-1 rounded bg-gray-100 text-gray-600">3. Airway</span>
+                    <span id="chip-step-4" class="px-2 py-1 rounded bg-gray-100 text-gray-600">4. Neuro</span>
+                    <span id="chip-step-5" class="px-2 py-1 rounded bg-gray-100 text-gray-600">5. Drive</span>
+                    <span id="chip-step-6" class="px-2 py-1 rounded bg-gray-100 text-gray-600">6. Oxygenation</span>
+                    <span id="chip-step-7" class="px-2 py-1 rounded bg-gray-100 text-gray-600">7. ABG</span>
+                    <span id="chip-step-8" class="px-2 py-1 rounded bg-gray-100 text-gray-600">8. Mechanics</span>
+                    <span id="chip-step-9" class="px-2 py-1 rounded bg-gray-100 text-gray-600">9. Obstructive</span>
+                    <span id="chip-step-10" class="px-2 py-1 rounded bg-gray-100 text-gray-600">10. Hemodynamics</span>
+                    <span id="chip-step-11" class="px-2 py-1 rounded bg-gray-100 text-gray-600">11. Synchrony</span>
+                    <span id="chip-step-12" class="px-2 py-1 rounded bg-gray-100 text-gray-600">12. Special</span>
+                    <span id="chip-step-13" class="px-2 py-1 rounded bg-gray-100 text-gray-600">13. Ventilator</span>
+                </div>
+            </div>
+
+            <!-- EXPERT MODE QUICK PANEL -->
+            <div id="expert-mode-panel" class="hidden bg-slate-900 text-white p-6 rounded-2xl shadow-xl space-y-4">
+                <div class="flex items-center justify-between border-b border-slate-700 pb-3">
+                    <h3 class="font-bold text-base text-amber-400 flex items-center gap-2">
+                        <i class="fa-solid fa-bolt"></i> Expert Mode 快速單頁式數據輸入面板
+                    </h3>
+                    <span class="text-xs text-slate-400">專科醫師精簡模式 (Consolidated Rapid Input)</span>
+                </div>
+                <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3 text-xs">
+                    <div>
+                        <label class="block text-slate-400 mb-1">Height (cm)</label>
+                        <input type="number" id="expert-height" value="170" onchange="syncExpertInputs()" class="w-full p-2 bg-slate-800 border border-slate-700 rounded text-white">
+                    </div>
+                    <div>
+                        <label class="block text-slate-400 mb-1">Weight (kg)</label>
+                        <input type="number" id="expert-weight" value="70" onchange="syncExpertInputs()" class="w-full p-2 bg-slate-800 border border-slate-700 rounded text-white">
+                    </div>
+                    <div>
+                        <label class="block text-slate-400 mb-1">PaO₂ (mmHg)</label>
+                        <input type="number" id="expert-pao2" value="65" onchange="syncExpertInputs()" class="w-full p-2 bg-slate-800 border border-slate-700 rounded text-white">
+                    </div>
+                    <div>
+                        <label class="block text-slate-400 mb-1">FiO₂ (0.21-1.0)</label>
+                        <input type="number" id="expert-fio2" value="0.70" step="0.05" onchange="syncExpertInputs()" class="w-full p-2 bg-slate-800 border border-slate-700 rounded text-white">
+                    </div>
+                    <div>
+                        <label class="block text-slate-400 mb-1">pH</label>
+                        <input type="number" id="expert-ph" value="7.31" step="0.01" onchange="syncExpertInputs()" class="w-full p-2 bg-slate-800 border border-slate-700 rounded text-white">
+                    </div>
+                    <div>
+                        <label class="block text-slate-400 mb-1">PaCO₂ (mmHg)</label>
+                        <input type="number" id="expert-paco2" value="48" onchange="syncExpertInputs()" class="w-full p-2 bg-slate-800 border border-slate-700 rounded text-white">
+                    </div>
+                    <div>
+                        <label class="block text-slate-400 mb-1">Plateau $P_{plat}$</label>
+                        <input type="number" id="expert-pplat" value="28" onchange="syncExpertInputs()" class="w-full p-2 bg-slate-800 border border-slate-700 rounded text-white">
+                    </div>
+                    <div>
+                        <label class="block text-slate-400 mb-1">Total PEEP</label>
+                        <input type="number" id="expert-peep" value="10" onchange="syncExpertInputs()" class="w-full p-2 bg-slate-800 border border-slate-700 rounded text-white">
+                    </div>
+                    <div>
+                        <label class="block text-slate-400 mb-1">Auto-PEEP</label>
+                        <input type="number" id="expert-auto-peep" value="0" onchange="syncExpertInputs()" class="w-full p-2 bg-slate-800 border border-slate-700 rounded text-white">
+                    </div>
+                    <div>
+                        <label class="block text-slate-400 mb-1">Spontaneous Drive</label>
+                        <select id="expert-drive" onchange="syncExpertInputs()" class="w-full p-2 bg-slate-800 border border-slate-700 rounded text-white">
+                            <option value="none">None (Apneic)</option>
+                            <option value="weak">Weak</option>
+                            <option value="adequate" selected>Adequate</option>
+                            <option value="excessive">Excessive</option>
+                        </select>
+                    </div>
+                    <div class="col-span-2 flex items-end">
+                        <button onclick="runClinicalDecisionEngine()" class="w-full py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded shadow transition flex items-center justify-center gap-1.5">
+                            <i class="fa-solid fa-microchip"></i> 快速分析 (Analyze)
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- FORM CONTAINER -->
+            <div id="guided-form-container" class="bg-white p-6 sm:p-8 rounded-2xl border border-gray-200 shadow-sm space-y-6">
+
+                <!-- STEP 1: PATIENT PROFILE -->
+                <div id="step-panel-1" class="step-panel space-y-6">
+                    <div class="border-b border-gray-100 pb-3">
+                        <h2 class="text-xl font-bold text-gray-900 flex items-center gap-2">
+                            <i class="fa-solid fa-user text-amber-600"></i> STEP 1: Patient Profile 病人基本數據
+                        </h2>
+                        <p class="text-xs text-gray-500">呼吸器潮氣量 ($V_T$) 相關判讀必須以預測體重 (Predicted Body Weight, PBW) 為基礎。</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1">Age 年齡 (years)</label>
+                            <input type="number" id="input-age" value="65" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1">Biological Sex 生物學性別</label>
+                            <select id="input-sex" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                                <option value="male" selected>Male 男性</option>
+                                <option value="female">Female 女性</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1">
+                                Height 身高 (cm) <span class="text-red-500">*必填</span>
+                            </label>
+                            <input type="number" id="input-height" value="170" onchange="calculateDerivedMetrics()" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1">Actual Weight 實際體重 (kg)</label>
+                            <input type="number" id="input-weight" value="70" onchange="calculateDerivedMetrics()" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                        </div>
+                    </div>
+
+                    <!-- Calculated Metrics Display Cards -->
+                    <div class="bg-amber-50 p-4 rounded-xl border border-amber-200 grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
+                        <div>
+                            <span class="block text-xs text-amber-800 font-medium">BMI 體重指數</span>
+                            <span id="display-bmi" class="text-lg font-bold text-amber-900">24.2 kg/m²</span>
+                        </div>
+                        <div class="border-t sm:border-t-0 sm:border-l border-amber-200 pt-2 sm:pt-0">
+                            <span class="block text-xs text-amber-800 font-medium">Predicted Body Weight (PBW) 預測體重</span>
+                            <span id="display-pbw" class="text-xl font-extrabold text-amber-900">66.0 kg</span>
+                        </div>
+                        <div class="border-t sm:border-t-0 sm:border-l border-amber-200 pt-2 sm:pt-0">
+                            <span class="block text-xs text-amber-800 font-medium">Current $V_T / PBW$ 比值</span>
+                            <span id="display-vt-pbw-preview" class="text-lg font-bold text-amber-900">6.36 mL/kg PBW</span>
+                        </div>
+                    </div>
+
+                    <div class="guided-explainer bg-blue-50 border border-blue-200 p-3 rounded-lg text-xs text-blue-900 space-y-1">
+                        <span class="font-bold flex items-center gap-1"><i class="fa-solid fa-circle-info"></i> ⓘ 為什麼要問這個？ (Why ask this?)</span>
+                        <p>肺泡容量主要決定於胸廓骨骼大小與身高，而非脂肪組織。因此 ARDS 肺保護策略的 $V_T$ (4–8 mL/kg) 必須依據 PBW 計算，避免依照實際體重設定導致高容積損傷 (Volutrauma)。</p>
+                    </div>
+                </div>
+
+                <!-- STEP 2: INDICATIONS & CONDITIONS -->
+                <div id="step-panel-2" class="step-panel hidden space-y-6">
+                    <div class="border-b border-gray-100 pb-3">
+                        <h2 class="text-xl font-bold text-gray-900 flex items-center gap-2">
+                            <i class="fa-solid fa-stetho text-amber-600"></i> STEP 2: Indication & Clinical Condition 呼吸支持原因
+                        </h2>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-2">Primary Indication for Ventilatory Support (可複選)</label>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 text-xs">
+                                <label class="flex items-center gap-2 p-2 rounded hover:bg-gray-50 border border-gray-200">
+                                    <input type="checkbox" name="ind-type" value="hypoxemic_failure" checked class="rounded text-amber-600">
+                                    Hypoxemic respiratory failure 低氧血症
+                                </label>
+                                <label class="flex items-center gap-2 p-2 rounded hover:bg-gray-50 border border-gray-200">
+                                    <input type="checkbox" name="ind-type" value="hypercapnic_failure" class="rounded text-amber-600">
+                                    Hypercapnic respiratory failure 高碳酸血症
+                                </label>
+                                <label class="flex items-center gap-2 p-2 rounded hover:bg-gray-50 border border-gray-200">
+                                    <input type="checkbox" name="ind-type" value="increased_wob" class="rounded text-amber-600">
+                                    Increased work of breathing 呼吸作功過高
+                                </label>
+                                <label class="flex items-center gap-2 p-2 rounded hover:bg-gray-50 border border-gray-200">
+                                    <input type="checkbox" name="ind-type" value="muscle_fatigue" class="rounded text-amber-600">
+                                    Respiratory muscle fatigue 呼吸肌疲勞
+                                </label>
+                                <label class="flex items-center gap-2 p-2 rounded hover:bg-gray-50 border border-gray-200">
+                                    <input type="checkbox" name="ind-type" value="airway_protection" class="rounded text-amber-600">
+                                    Airway protection 氣道保護需求
+                                </label>
+                                <label class="flex items-center gap-2 p-2 rounded hover:bg-gray-50 border border-gray-200">
+                                    <input type="checkbox" name="ind-type" value="severe_metabolic_acidosis" class="rounded text-amber-600">
+                                    Severe metabolic acidosis 嚴重代謝性酸中毒
+                                </label>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-2">Suspected / Confirmed Clinical Condition (可複選)</label>
+                            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 text-xs">
+                                <label class="flex items-center gap-2 p-2 rounded hover:bg-gray-50 border border-gray-200">
+                                    <input type="checkbox" name="cond-type" value="ards" checked class="rounded text-amber-600">
+                                    ARDS 急性呼吸窘迫
+                                </label>
+                                <label class="flex items-center gap-2 p-2 rounded hover:bg-gray-50 border border-gray-200">
+                                    <input type="checkbox" name="cond-type" value="pneumonia" checked class="rounded text-amber-600">
+                                    Pneumonia 肺炎
+                                </label>
+                                <label class="flex items-center gap-2 p-2 rounded hover:bg-gray-50 border border-gray-200">
+                                    <input type="checkbox" name="cond-type" value="copd_exacerbation" class="rounded text-amber-600">
+                                    COPD exacerbation 慢性阻塞性肺病
+                                </label>
+                                <label class="flex items-center gap-2 p-2 rounded hover:bg-gray-50 border border-gray-200">
+                                    <input type="checkbox" name="cond-type" value="severe_asthma" class="rounded text-amber-600">
+                                    Severe asthma 氣喘重積
+                                </label>
+                                <label class="flex items-center gap-2 p-2 rounded hover:bg-gray-50 border border-gray-200">
+                                    <input type="checkbox" name="cond-type" value="cardiogenic_edema" class="rounded text-amber-600">
+                                    Cardiogenic edema 心因性肺水腫
+                                </label>
+                                <label class="flex items-center gap-2 p-2 rounded hover:bg-gray-50 border border-gray-200">
+                                    <input type="checkbox" name="cond-type" value="sepsis" class="rounded text-amber-600">
+                                    Sepsis 敗血症
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="guided-explainer bg-blue-50 border border-blue-200 p-3 rounded-lg text-xs text-blue-900">
+                        <span class="font-bold">ⓘ 為什麼要問這個？</span>
+                        <p>不同病因有完全不同的通氣目標。例如 ARDS 著重小潮氣量與適當 PEEP，而 COPD 著重延長呼氣時間與避免 Dynamic Hyperinflation。</p>
+                    </div>
+                </div>
+
+                <!-- STEP 3: AIRWAY & INTERFACE -->
+                <div id="step-panel-3" class="step-panel hidden space-y-6">
+                    <div class="border-b border-gray-100 pb-3">
+                        <h2 class="text-xl font-bold text-gray-900 flex items-center gap-2">
+                            <i class="fa-solid fa-pipe-valve text-amber-600"></i> STEP 3: Airway & Respiratory Interface 氣道介面
+                        </h2>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1">Current Airway Interface 氣道類型</label>
+                            <select id="input-airway-type" onchange="toggleNivSection()" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                                <option value="ett" selected>Endotracheal tube (ETT) 經氣管插管</option>
+                                <option value="tracheostomy">Tracheostomy 氣切管</option>
+                                <option value="niv_mask">NIV Mask 非侵襲性面罩</option>
+                                <option value="hfnc">HFNC 高流量鼻導管</option>
+                                <option value="none">No artificial airway 無人工氣道</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- NIV Panel (Dynamic) -->
+                    <div id="panel-niv-checks" class="hidden bg-orange-50 p-4 rounded-xl border border-orange-200 space-y-3">
+                        <h4 class="font-bold text-sm text-orange-900">NIV Safety & Candidate Assessment (非侵襲性通氣安全評估)</h4>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 text-xs">
+                            <label class="flex items-center gap-2"><input type="checkbox" id="niv-conscious" checked> Conscious & Cooperative 清醒配合</label>
+                            <label class="flex items-center gap-2"><input type="checkbox" id="niv-airway-protect" checked> Airway protection adequate 氣道反射良好</label>
+                            <label class="flex items-center gap-2"><input type="checkbox" id="niv-secretion-ok" checked> Secretion manageable 分泌物可處置</label>
+                            <label class="flex items-center gap-2"><input type="checkbox" id="niv-hemo-stable" checked> Hemodynamically stable 血流動力學穩定</label>
+                            <label class="flex items-center gap-2"><input type="checkbox" id="niv-aspiration-risk"> High Aspiration Risk 高吸入風險</label>
+                            <label class="flex items-center gap-2"><input type="checkbox" id="niv-facial-contra"> Facial Trauma/Contraindication 顏面禁忌症</label>
+                        </div>
+                    </div>
+
+                    <div class="guided-explainer bg-blue-50 border border-blue-200 p-3 rounded-lg text-xs text-blue-900">
+                        <span class="font-bold">ⓘ 為什麼要問這個？</span>
+                        <p>非侵襲通氣 (NIV) 需考量病人意識與分泌物清除能力。若有高吸入風險、意識混濁或血壓不穩定，應慎防 NIV 失敗並儘早評估侵襲性插管。</p>
+                    </div>
+                </div>
+
+                <!-- STEP 4: NEUROLOGIC STATUS & SEDATION -->
+                <div id="step-panel-4" class="step-panel hidden space-y-6">
+                    <div class="border-b border-gray-100 pb-3">
+                        <h2 class="text-xl font-bold text-gray-900 flex items-center gap-2">
+                            <i class="fa-solid fa-brain text-amber-600"></i> STEP 4: Neurologic Status & Sedation 意識與鎮靜
+                        </h2>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1">Glasgow Coma Scale (GCS)</label>
+                            <input type="number" id="input-gcs" value="11" min="3" max="15" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1">RASS Score (-5 to +4)</label>
+                            <input type="number" id="input-rass" value="-1" min="-5" max="4" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1">Sedation Level 鎮靜深度</label>
+                            <select id="input-sedation" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                                <option value="none">None 無鎮靜</option>
+                                <option value="light" selected>Light Sedation 輕度鎮靜 (RASS -1 to -2)</option>
+                                <option value="deep">Deep Sedation 深度鎮靜 (RASS -3 to -5)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                        <label class="flex items-center gap-2 p-2 rounded hover:bg-gray-50 border border-gray-200">
+                            <input type="checkbox" id="check-nmba" class="rounded text-amber-600">
+                            Neuromuscular Blockade (NMBA) 使用肌肉鬆弛劑
+                        </label>
+                        <label class="flex items-center gap-2 p-2 rounded hover:bg-gray-50 border border-gray-200">
+                            <input type="checkbox" id="check-follow-commands" checked class="rounded text-amber-600">
+                            Able to follow commands 可遵從指令
+                        </label>
+                    </div>
+
+                    <div class="guided-explainer bg-blue-50 border border-blue-200 p-3 rounded-lg text-xs text-blue-900">
+                        <span class="font-bold">ⓘ 為什麼要問這個？</span>
+                        <p>深度鎮靜或使用肌鬆劑 (NMBA) 時，病人無可靠自發呼吸，必須選擇 Full Ventilatory Support (Controlled/Assist Mode)；若輕度鎮靜且有驅動，則可評估 Assisted 或 Spontaneous Mode。</p>
+                    </div>
+                </div>
+
+                <!-- STEP 5: SPONTANEOUS RESPIRATORY DRIVE -->
+                <div id="step-panel-5" class="step-panel hidden space-y-6">
+                    <div class="border-b border-gray-100 pb-3">
+                        <h2 class="text-xl font-bold text-gray-900 flex items-center gap-2">
+                            <i class="fa-solid fa-wave-square text-amber-600"></i> STEP 5: Spontaneous Respiratory Drive 自主呼吸驅動力量
+                        </h2>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 mb-1">Spontaneous Effort Status (重要決策節點)</label>
+                        <select id="input-drive-status" class="w-full px-3 py-2 border border-amber-300 bg-amber-50 rounded-lg text-sm font-bold text-amber-900">
+                            <option value="none">None 無自發呼吸 (Apneic / Paralyzed)</option>
+                            <option value="weak">Weak 微弱自發呼吸</option>
+                            <option value="adequate" selected>Adequate 適當可靠自發呼吸</option>
+                            <option value="excessive">Excessive 過度強烈呼吸驅動 (High Drive)</option>
+                            <option value="irregular">Irregular 不規則驅動</option>
+                        </select>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1">Total RR 總呼吸速率 (bpm)</label>
+                            <input type="number" id="input-rr-total" value="24" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1">Set RR 設定呼吸速率 (bpm)</label>
+                            <input type="number" id="input-rr-set" value="16" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1">Spontaneous RR (bpm)</label>
+                            <input type="number" id="input-rr-spon" value="8" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
+                        <label class="flex items-center gap-2 p-2 border rounded"><input type="checkbox" id="check-accessory-muscle"> 使用輔助呼吸肌</label>
+                        <label class="flex items-center gap-2 p-2 border rounded"><input type="checkbox" id="check-paradoxical"> 矛盾性呼吸 (Paradoxical)</label>
+                        <label class="flex items-center gap-2 p-2 border rounded"><input type="checkbox" id="check-fatigue"> 呼吸肌疲勞徵象</label>
+                    </div>
+
+                    <div class="guided-explainer bg-blue-50 border border-blue-200 p-3 rounded-lg text-xs text-blue-900">
+                        <span class="font-bold">ⓘ 為什麼要問這個？</span>
+                        <p>有無可靠自發呼吸是決定 Controlled vs Assisted vs Spontaneous (PSV) 模式的分水嶺。強烈自主呼吸在 VC 模式下易導致 Flow Starvation 與 Double Triggering。</p>
+                    </div>
+                </div>
+
+                <!-- STEP 6: OXYGENATION -->
+                <div id="step-panel-6" class="step-panel hidden space-y-6">
+                    <div class="border-b border-gray-100 pb-3">
+                        <h2 class="text-xl font-bold text-gray-900 flex items-center gap-2">
+                            <i class="fa-solid fa-droplet text-amber-600"></i> STEP 6: Oxygenation 氧合狀態
+                        </h2>
+                    </div>
+
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1">SpO₂ (%)</label>
+                            <input type="number" id="input-spo2" value="91" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1">PaO₂ (mmHg)</label>
+                            <input type="number" id="input-pao2" value="65" onchange="calculateDerivedMetrics()" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1">FiO₂ (0.21 - 1.0)</label>
+                            <input type="number" id="input-fio2" value="0.70" step="0.05" onchange="calculateDerivedMetrics()" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1">Set PEEP (cmH₂O)</label>
+                            <input type="number" id="input-peep" value="10" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                        </div>
+                    </div>
+
+                    <div class="bg-amber-50 p-4 rounded-xl border border-amber-200 text-center">
+                        <span class="text-xs text-amber-800 font-medium">P/F Ratio ($PaO_2 / FiO_2$) 計算結果</span>
+                        <div id="display-pf-ratio" class="text-2xl font-extrabold text-amber-900">92.9 mmHg (Severe Hypoxemia)</div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+                        <label class="flex items-center gap-2 p-2 border rounded"><input type="checkbox" id="check-infiltrates" checked> Bilateral Infiltrates 雙側浸潤</label>
+                        <label class="flex items-center gap-2 p-2 border rounded"><input type="checkbox" id="check-prone"> Prone Positioning 俯臥位通氣</label>
+                        <label class="flex items-center gap-2 p-2 border rounded"><input type="checkbox" id="check-suspect-ards" checked> Suspected ARDS 懷疑 ARDS</label>
+                    </div>
+
+                    <div class="guided-explainer bg-blue-50 border border-blue-200 p-3 rounded-lg text-xs text-blue-900">
+                        <span class="font-bold">ⓘ 為什麼要問這個？</span>
+                        <p>P/F ratio $\le 300$ 提示急性肺損傷。嚴重的低氧血症 (P/F $< 150$) 需結合 PEEP 滴定、肺復張與可能的 APRV 或高階輔助模組。</p>
+                    </div>
+                </div>
+
+                <!-- STEP 7: VENTILATION & ABG -->
+                <div id="step-panel-7" class="step-panel hidden space-y-6">
+                    <div class="border-b border-gray-100 pb-3">
+                        <h2 class="text-xl font-bold text-gray-900 flex items-center gap-2">
+                            <i class="fa-solid fa-vial text-amber-600"></i> STEP 7: Ventilation & Arterial Blood Gas (ABG) 血液氣體分析
+                        </h2>
+                    </div>
+
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1">pH</label>
+                            <input type="number" id="input-ph" value="7.31" step="0.01" onchange="calculateDerivedMetrics()" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1">PaCO₂ (mmHg)</label>
+                            <input type="number" id="input-paco2" value="48" onchange="calculateDerivedMetrics()" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1">HCO₃⁻ (mEq/L)</label>
+                            <input type="number" id="input-hco3" value="24" onchange="calculateDerivedMetrics()" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1">Lactate (mmol/L, opt)</label>
+                            <input type="number" id="input-lactate" value="2.1" step="0.1" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                        </div>
+                    </div>
+
+                    <div id="display-abg-interpretation" class="p-3 rounded-lg bg-gray-100 text-xs font-semibold text-gray-800 flex items-center gap-2">
+                        <i class="fa-solid fa-calculator text-amber-600"></i> 酸鹼判讀：<span id="abg-result-text" class="text-amber-900">Mild Respiratory Acidosis</span>
+                    </div>
+
+                    <div class="guided-explainer bg-blue-50 border border-blue-200 p-3 rounded-lg text-xs text-blue-900">
+                        <span class="font-bold">ⓘ 特別警示：代償性過度通氣 (Compensatory Hyperventilation)</span>
+                        <p>嚴重的代謝性酸中毒 (Severe Metabolic Acidosis) 病人，PaCO₂ 常代償性降低至 20–25 mmHg。插管通氣時不可硬將 PaCO₂ 拉回 40 mmHg，否則會瞬間暴發致命性重度酸血症！</p>
+                    </div>
+                </div>
+
+                <!-- STEP 8: LUNG MECHANICS -->
+                <div id="step-panel-8" class="step-panel hidden space-y-6">
+                    <div class="border-b border-gray-100 pb-3">
+                        <h2 class="text-xl font-bold text-gray-900 flex items-center gap-2">
+                            <i class="fa-solid fa-gauge-high text-amber-600"></i> STEP 8: Lung Mechanics 肺力學參數
+                        </h2>
+                    </div>
+
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1">Peak Pressure $P_{peak}$ (cmH₂O)</label>
+                            <input type="number" id="input-ppeak" value="35" onchange="calculateDerivedMetrics()" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1">Plateau Pressure $P_{plat}$ (cmH₂O)</label>
+                            <input type="number" id="input-pplat" value="28" onchange="calculateDerivedMetrics()" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1">Total PEEP (cmH₂O)</label>
+                            <input type="number" id="input-total-peep" value="10" onchange="calculateDerivedMetrics()" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1">Auto-PEEP (cmH₂O)</label>
+                            <input type="number" id="input-auto-peep" value="0" onchange="calculateDerivedMetrics()" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                        </div>
+                    </div>
+
+                    <!-- Prominent Mechanics Cards -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div class="p-4 rounded-xl bg-amber-50 border border-amber-200 text-center">
+                            <span class="text-xs text-amber-800 font-medium">Driving Pressure 驅動壓 ($\Delta P = P_{plat} - Total\,PEEP$)</span>
+                            <div id="display-driving-pressure" class="text-2xl font-extrabold text-amber-900">18.0 cmH₂O (Elevated > 14)</div>
+                        </div>
+                        <div class="p-4 rounded-xl bg-amber-50 border border-amber-200 text-center">
+                            <span class="text-xs text-amber-800 font-medium">Static Compliance 靜態順應性 ($C_{stat}$)</span>
+                            <div id="display-cstat" class="text-2xl font-extrabold text-amber-900">23.3 mL/cmH₂O (Poor Compliance)</div>
+                        </div>
+                    </div>
+
+                    <div class="guided-explainer bg-blue-50 border border-blue-200 p-3 rounded-lg text-xs text-blue-900">
+                        <span class="font-bold">ⓘ 為什麼要問這個？</span>
+                        <p>Driving Pressure ($\Delta P > 14$ cmH₂O) 是預測 ARDS 肺損傷與死亡率的最佳獨立指標。高 $P_{peak}$ 若伴隨正常 $P_{plat}$ 提示氣道阻力增加，而非肺泡過度擴張。</p>
+                    </div>
+                </div>
+
+                <!-- STEP 9: OBSTRUCTIVE PHYSIOLOGY PANEL -->
+                <div id="step-panel-9" class="step-panel hidden space-y-6">
+                    <div class="border-b border-gray-100 pb-3">
+                        <h2 class="text-xl font-bold text-gray-900 flex items-center gap-2">
+                            <i class="fa-solid fa-wind text-amber-600"></i> STEP 9: Obstructive Physiology 阻塞性肺病專區 (COPD / Asthma)
+                        </h2>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1">Inspiratory Time $T_i$ (sec)</label>
+                            <input type="number" id="input-ti" value="0.8" step="0.1" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1">Expiratory Time $T_e$ (sec)</label>
+                            <input type="number" id="input-te" value="1.7" step="0.1" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1">Inspiratory Flow 吸氣流速 (L/min)</label>
+                            <input type="number" id="input-insp-flow" value="60" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                        </div>
+                    </div>
+
+                    <div class="space-y-2">
+                        <label class="block text-xs font-semibold text-gray-700">Expiratory Flow Returns to Baseline Before Next Breath? (呼氣流速是否在下一次吸氣前歸零？)</label>
+                        <select id="input-flow-baseline" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                            <option value="yes">Yes 正常歸零 (No Breath Stacking)</option>
+                            <option value="no" selected>No 未歸零 (Dynamic Hyperinflation / Breath Stacking Risk)</option>
+                            <option value="unknown">Unknown 未評估</option>
+                        </select>
+                    </div>
+
+                    <div class="guided-explainer bg-blue-50 border border-blue-200 p-3 rounded-lg text-xs text-blue-900">
+                        <span class="font-bold">ⓘ 阻塞性生理處置原則</span>
+                        <p>若呼氣流速未歸零，代表有 Auto-PEEP 與氣體積聚 (Dynamic Hyperinflation)。應透過降低呼吸速率、加快吸氣流速以延長呼氣時間 ($T_e$)，而不是單純切換 Mode。</p>
+                    </div>
+                </div>
+
+                <!-- STEP 10: HEMODYNAMICS -->
+                <div id="step-panel-10" class="step-panel hidden space-y-6">
+                    <div class="border-b border-gray-100 pb-3">
+                        <h2 class="text-xl font-bold text-gray-900 flex items-center gap-2">
+                            <i class="fa-solid fa-heart-pulse text-amber-600"></i> STEP 10: Hemodynamics 血流動力學
+                        </h2>
+                    </div>
+
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1">Heart Rate HR (bpm)</label>
+                            <input type="number" id="input-hr" value="98" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1">Systolic BP SBP (mmHg)</label>
+                            <input type="number" id="input-sbp" value="115" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1">Diastolic BP DBP (mmHg)</label>
+                            <input type="number" id="input-dbp" value="70" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1">Mean Arterial Pressure MAP</label>
+                            <input type="number" id="input-map" value="85" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+                        <label class="flex items-center gap-2 p-2 border rounded"><input type="checkbox" id="check-vasopressor"> On Vasopressors 使用昇壓藥</label>
+                        <label class="flex items-center gap-2 p-2 border rounded"><input type="checkbox" id="check-shock"> Shock Present 休克狀態</label>
+                        <label class="flex items-center gap-2 p-2 border rounded"><input type="checkbox" id="check-rv-failure"> RV Failure 右心衰竭</label>
+                    </div>
+
+                    <div class="guided-explainer bg-blue-50 border border-blue-200 p-3 rounded-lg text-xs text-blue-900">
+                        <span class="font-bold">ⓘ 為什麼要問這個？</span>
+                        <p>高 PEEP 與正壓通氣會增加胸腔內壓，減少靜脈回流 (Venous Return) 並增加右心後負荷。在血壓偏低或休克病人加高 PEEP 需極度謹慎。</p>
+                    </div>
+                </div>
+
+                <!-- STEP 11: PATIENT-VENTILATOR SYNCHRONY -->
+                <div id="step-panel-11" class="step-panel hidden space-y-6">
+                    <div class="border-b border-gray-100 pb-3">
+                        <h2 class="text-xl font-bold text-gray-900 flex items-center gap-2">
+                            <i class="fa-solid fa-arrows-rotate text-amber-600"></i> STEP 11: Patient–Ventilator Synchrony 病人－呼吸器不同步
+                        </h2>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 mb-2">Observed Asynchrony Types 觀察到的不同步類型 (可複選)</label>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 text-xs">
+                            <label class="flex items-center gap-2 p-2 border rounded hover:bg-gray-50">
+                                <input type="checkbox" name="async-type" value="double_triggering"> Double triggering 雙重觸發
+                            </label>
+                            <label class="flex items-center gap-2 p-2 border rounded hover:bg-gray-50">
+                                <input type="checkbox" name="async-type" value="ineffective_triggering"> Ineffective triggering 無效觸發
+                            </label>
+                            <label class="flex items-center gap-2 p-2 border rounded hover:bg-gray-50">
+                                <input type="checkbox" name="async-type" value="flow_starvation"> Flow starvation 流速飢餓
+                            </label>
+                            <label class="flex items-center gap-2 p-2 border rounded hover:bg-gray-50">
+                                <input type="checkbox" name="async-type" value="auto_triggering"> Auto-triggering 自動觸發
+                            </label>
+                            <label class="flex items-center gap-2 p-2 border rounded hover:bg-gray-50">
+                                <input type="checkbox" name="async-type" value="reverse_triggering"> Reverse triggering 反向觸發
+                            </label>
+                            <label class="flex items-center gap-2 p-2 border rounded hover:bg-gray-50">
+                                <input type="checkbox" name="async-type" value="breath_stacking"> Breath stacking 氣體積聚
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="guided-explainer bg-blue-50 border border-blue-200 p-3 rounded-lg text-xs text-blue-900 space-y-1">
+                        <span class="font-bold">ⓘ Double Triggering 雙觸發處置指引</span>
+                        <p>可能原因：病人呼吸驅動過強、吸氣時間設定過短或 delivered $V_T$ 不足。應先調高 Flow 或切換至 Pressure-targeted Mode，而非立刻深度鎮靜。</p>
+                    </div>
+                </div>
+
+                <!-- STEP 12: SPECIAL CONDITIONS -->
+                <div id="step-panel-12" class="step-panel hidden space-y-6">
+                    <div class="border-b border-gray-100 pb-3">
+                        <h2 class="text-xl font-bold text-gray-900 flex items-center gap-2">
+                            <i class="fa-solid fa-triangle-exclamation text-amber-600"></i> STEP 12: Special Conditions 特殊生理與臨床情境
+                        </h2>
+                    </div>
+
+                    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 text-xs">
+                        <label class="flex items-center gap-2 p-2 border rounded"><input type="checkbox" name="spec-cond" value="pneumothorax"> Pneumothorax 氣胸</label>
+                        <label class="flex items-center gap-2 p-2 border rounded"><input type="checkbox" name="spec-cond" value="tbi"> Traumatic Brain Injury 顱腦損傷</label>
+                        <label class="flex items-center gap-2 p-2 border rounded"><input type="checkbox" name="spec-cond" value="severe_metabolic_acidosis"> Severe Metabolic Acidosis</label>
+                        <label class="flex items-center gap-2 p-2 border rounded"><input type="checkbox" name="spec-cond" value="neuromuscular_disease"> Neuromuscular Disease</label>
+                        <label class="flex items-center gap-2 p-2 border rounded"><input type="checkbox" name="spec-cond" value="morbid_obesity"> Morbid Obesity 重度肥胖</label>
+                        <label class="flex items-center gap-2 p-2 border rounded"><input type="checkbox" name="spec-cond" value="ecmo"> ECMO 體外膜氧合</label>
+                    </div>
+                </div>
+
+                <!-- STEP 13: CURRENT VENTILATOR -->
+                <div id="step-panel-13" class="step-panel hidden space-y-6">
+                    <div class="border-b border-gray-100 pb-3">
+                        <h2 class="text-xl font-bold text-gray-900 flex items-center gap-2">
+                            <i class="fa-solid fa-sliders text-amber-600"></i> STEP 13: Current Ventilator Setup 當前呼吸器設定
+                        </h2>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1">Ventilator Manufacturer 呼吸器品牌</label>
+                            <select id="input-brand" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                                <option value="hamilton">Hamilton (e.g. C1/G5)</option>
+                                <option value="drager" selected>Dräger (e.g. Evita/Babylog)</option>
+                                <option value="servo">Getinge Servo (e.g. Servo-u/i)</option>
+                                <option value="pb">Puritan Bennett (e.g. PB980/840)</option>
+                                <option value="ge">GE Healthcare (e.g. Carescape)</option>
+                                <option value="other">Other / Unknown</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1">Current Ventilator Mode 當前模式</label>
+                            <select id="input-current-mode" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                                <option value="vc_ac" selected>VC-A/C (Volume Control Assist/Control)</option>
+                                <option value="pc_ac">PC-A/C (Pressure Control Assist/Control)</option>
+                                <option value="prvc">PRVC / VC+ / Autoflow equivalent</option>
+                                <option value="psv">PSV (Pressure Support Ventilation)</option>
+                                <option value="simv_vc">SIMV-VC</option>
+                                <option value="aprv">APRV / BiLevel</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- WIZARD NAVIGATION FOOTER BUTTONS -->
+                <div class="pt-4 border-t border-gray-200 flex items-center justify-between">
+                    <button id="btn-prev-step" onclick="changeWizardStep(-1)" class="px-5 py-2.5 rounded-xl border border-gray-300 text-gray-700 font-semibold text-sm hover:bg-gray-100 flex items-center gap-2">
+                        <i class="fa-solid fa-arrow-left"></i> 上一步 Previous
+                    </button>
+                    
+                    <button id="btn-next-step" onclick="changeWizardStep(1)" class="px-6 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-sm shadow-md flex items-center gap-2">
+                        下一步 Next <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+
+                    <button id="btn-submit-assessment" onclick="runClinicalDecisionEngine()" class="hidden px-8 py-3 rounded-xl bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white font-extrabold text-base shadow-lg flex items-center gap-2">
+                        <i class="fa-solid fa-microchip"></i> 執行臨床分析與 Mode 決策 (Analyze)
+                    </button>
+                </div>
+
+            </div>
+        </section>
+
+
+        <!-- ================= PAGE 3: RESULTS PAGE ================= -->
+        <section id="page-results" class="hidden space-y-8">
+
+            <!-- HIGH-RISK SAFETY ALERTS DASHBOARD -->
+            <div id="safety-alerts-container" class="space-y-3">
+                <!-- Dynamic Red / Amber Alerts Inserted Here -->
+            </div>
+
+            <!-- CLINICAL SUMMARY & STRATEGY BANNER -->
+            <div class="bg-gradient-to-r from-slate-900 to-slate-800 rounded-3xl p-6 sm:p-8 text-white shadow-xl space-y-4">
+                <div class="flex flex-wrap items-center justify-between gap-4">
+                    <div>
+                        <span class="text-xs font-bold uppercase tracking-wider text-amber-400">Clinical Case Summary & Reasoning</span>
+                        <h2 id="res-primary-problem" class="text-2xl sm:text-3xl font-extrabold tracking-tight text-white mt-1">
+                            Hypoxemic Respiratory Failure + Poor Compliance
+                        </h2>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-xs text-slate-400 block">Suggested Strategy</span>
+                        <span id="res-suggested-strategy" class="text-lg font-bold text-amber-300">Lung-Protective Assisted Ventilation</span>
+                    </div>
+                </div>
+
+                <p id="res-clinical-summary" class="text-sm text-slate-300 leading-relaxed border-t border-slate-700 pt-3">
+                    65-year-old male with pneumonia-associated severe hypoxemia (P/F 92.9), moderate spontaneous effort, reduced compliance (23.3 mL/cmH2O), and elevated driving pressure (18 cmH2O). Full/Assisted ventilatory support required.
+                </p>
+            </div>
+
+            <!-- PREFERRED MODE FAMILY RECOMMENDATION CARD -->
+            <div class="bg-white rounded-3xl border-2 border-amber-500 shadow-xl overflow-hidden">
+                <div class="bg-amber-500 text-white px-6 py-4 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-star text-xl"></i>
+                        <span class="font-extrabold text-lg">首選呼吸器模式家族 Preferred Mode Family</span>
+                    </div>
+                    <span id="res-confidence-badge" class="px-3 py-1 rounded-full bg-white/20 text-xs font-bold backdrop-blur border border-white/30">
+                        Confidence: High
+                    </span>
+                </div>
+
+                <div class="p-6 sm:p-8 space-y-6">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-100 pb-4">
+                        <div>
+                            <h3 id="res-preferred-title-zh" class="text-2xl font-black text-gray-900">壓力控制/輔助通氣 Mode Family</h3>
+                            <span id="res-preferred-title-en" class="text-sm font-semibold text-gray-500 block">Pressure-Targeted Assist/Control Ventilation</span>
+                        </div>
+                        <button onclick="openExplainModeModal()" class="px-4 py-2 rounded-xl bg-amber-50 text-amber-800 font-bold text-xs hover:bg-amber-100 border border-amber-200 flex items-center gap-1.5 self-start sm:self-auto">
+                            <i class="fa-solid fa-circle-question"></i> Explain Mode 深入瞭解模式機制
+                        </button>
+                    </div>
+
+                    <!-- Manufacturer Specific Mapping Chips -->
+                    <div class="space-y-1.5">
+                        <span class="text-xs font-bold text-gray-500 uppercase tracking-wider block">各品牌呼吸器對應名稱 (Manufacturer Mapping)</span>
+                        <div id="res-manufacturer-chips" class="flex flex-wrap gap-2 text-xs">
+                            <!-- Chips dynamically generated -->
+                        </div>
+                    </div>
+
+                    <!-- Clinical Reasoning 5-Question Answers -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50 p-6 rounded-2xl border border-slate-200">
+                        <div class="space-y-2">
+                            <h4 class="font-bold text-sm text-slate-900 flex items-center gap-1.5">
+                                <i class="fa-solid fa-circle-check text-emerald-600"></i> Why this strategy? (推演邏輯)
+                            </h4>
+                            <ul id="res-reasoning-why" class="text-xs text-slate-700 space-y-1.5 list-disc list-inside">
+                                <!-- Dynamic Li -->
+                            </ul>
+                        </div>
+
+                        <div class="space-y-2">
+                            <h4 class="font-bold text-sm text-slate-900 flex items-center gap-1.5">
+                                <i class="fa-solid fa-eye text-blue-600"></i> What should I monitor next? (關鍵監測指標)
+                            </h4>
+                            <ul id="res-reasoning-monitor" class="text-xs text-slate-700 space-y-1.5 list-disc list-inside">
+                                <!-- Dynamic Li -->
+                            </ul>
+                        </div>
+
+                        <div class="space-y-2">
+                            <h4 class="font-bold text-sm text-slate-900 flex items-center gap-1.5">
+                                <i class="fa-solid fa-triangle-exclamation text-amber-600"></i> What could go wrong? (潛在陷阱與風險)
+                            </h4>
+                            <ul id="res-reasoning-risks" class="text-xs text-slate-700 space-y-1.5 list-disc list-inside">
+                                <!-- Dynamic Li -->
+                            </ul>
+                        </div>
+
+                        <div class="space-y-2">
+                            <h4 class="font-bold text-sm text-slate-900 flex items-center gap-1.5">
+                                <i class="fa-solid fa-rotate text-purple-600"></i> When should I reconsider? (何時重新評估)
+                            </h4>
+                            <ul id="res-reasoning-reconsider" class="text-xs text-slate-700 space-y-1.5 list-disc list-inside">
+                                <!-- Dynamic Li -->
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Transparency Rule Trace Button -->
+                    <div class="text-right">
+                        <button onclick="openRuleTransparencyModal()" class="text-xs font-semibold text-amber-700 hover:underline inline-flex items-center gap-1">
+                            <i class="fa-solid fa-diagram-project"></i> 查看推演鏈 Traceability Chain (Why am I seeing this?)
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- REASONABLE ALTERNATIVES & LESS SUITABLE MODES -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Alternatives -->
+                <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-4">
+                    <h3 class="font-bold text-base text-gray-900 flex items-center gap-2">
+                        <i class="fa-solid fa-arrows-split-up-and-left text-blue-600"></i> 合理替代 Mode Family (Alternatives)
+                    </h3>
+                    <div id="res-alternatives-list" class="space-y-3 text-xs">
+                        <!-- Dynamic list -->
+                    </div>
+                </div>
+
+                <!-- Less Suitable -->
+                <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-4">
+                    <h3 class="font-bold text-base text-gray-900 flex items-center gap-2">
+                        <i class="fa-solid fa-ban text-red-500"></i> 目前較不適用模式 (Less Suitable Now)
+                    </h3>
+                    <div id="res-less-suitable-list" class="space-y-3 text-xs">
+                        <!-- Dynamic list -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- SUGGESTED INITIAL PARAMETERS TABLE -->
+            <div class="bg-white p-6 sm:p-8 rounded-2xl border border-gray-200 shadow-sm space-y-4">
+                <h3 class="font-bold text-lg text-gray-900 flex items-center gap-2">
+                    <i class="fa-solid fa-sliders text-amber-600"></i> Suggested Initial Parameters to Consider (建議初始設定參考)
+                </h3>
+                <p class="text-xs text-gray-500">此範圍供床邊調整參考，非固定命令。所有設定需依據即時波形與氣體分析動態微調。</p>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs border-collapse">
+                        <thead>
+                            <tr class="bg-amber-50 border-b border-amber-200 text-amber-900 font-bold">
+                                <th class="p-3">Parameter 參數</th>
+                                <th class="p-3">Suggested Target / Range 建議目標範圍</th>
+                                <th class="p-3">Clinical Rationale 臨床考量 (ⓘ Why)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="res-parameters-table-body" class="divide-y divide-gray-100">
+                            <!-- Dynamic Rows -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- SAFETY DASHBOARD METRIC CARDS -->
+            <div class="bg-white p-6 sm:p-8 rounded-2xl border border-gray-200 shadow-sm space-y-4">
+                <h3 class="font-bold text-lg text-gray-900 flex items-center gap-2">
+                    <i class="fa-solid fa-heart-pulse text-red-600"></i> Safety Dashboard (安全性與生理監測卡片)
+                </h3>
+
+                <div id="res-safety-dashboard-grid" class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    <!-- 8 Metric Status Cards inserted dynamically -->
+                </div>
+            </div>
+
+            <!-- SPECIAL PHYSIOLOGY MODULES -->
+            <div id="special-module-ards" class="hidden bg-red-50 border border-red-200 p-6 rounded-2xl space-y-3">
+                <h4 class="font-bold text-red-900 text-sm flex items-center gap-2">
+                    <i class="fa-solid fa-shield-cat"></i> ARDS Lung Protective Ventilation Panel (肺保護通氣模組)
+                </h4>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs text-red-800 font-medium">
+                    <div class="bg-white p-2.5 rounded border border-red-200 text-center">Target $V_T$: 4–8 mL/kg PBW</div>
+                    <div class="bg-white p-2.5 rounded border border-red-200 text-center">Target $P_{plat}$: $\le 30$ cmH₂O</div>
+                    <div class="bg-white p-2.5 rounded border border-red-200 text-center">Target $\Delta P$: $\le 14$ cmH₂O</div>
+                    <div class="bg-white p-2.5 rounded border border-red-200 text-center">PEEP Titration: High/Low PEEP Table</div>
+                </div>
+            </div>
+
+            <div id="special-module-acidosis" class="hidden bg-amber-50 border border-amber-300 p-6 rounded-2xl space-y-3">
+                <h4 class="font-bold text-amber-900 text-sm flex items-center gap-2">
+                    <i class="fa-solid fa-triangle-exclamation"></i> Severe Metabolic Acidosis Compensatory Panel (高分鐘通氣量代償警示)
+                </h4>
+                <p class="text-xs text-amber-900">
+                    警示：病人具有重度代謝性酸中毒代償。若調低呼吸速率或 $V_T$ 導致 PaCO₂ 上升至正常 40 mmHg，將導致嚴重血酸驟降與心血管驟停！請維持足夠的每分鐘通氣量 ($V_E$)。
+                </p>
+            </div>
+
+            <div id="special-module-weaning" class="hidden bg-emerald-50 border border-emerald-300 p-6 rounded-2xl space-y-3">
+                <h4 class="font-bold text-emerald-900 text-sm flex items-center gap-2">
+                    <i class="fa-solid fa-flag-checkered"></i> Weaning & Liberation Assessment Panel (脫機準備評估)
+                </h4>
+                <p class="text-xs text-emerald-900">
+                    病人生理狀態穩定、氧合要求低且具備良好自發驅動。建議評估進行 30–90 分鐘 Spontaneous Breathing Trial (SBT)。
+                </p>
+            </div>
+
+        </section>
+
+
+        <!-- ================= PAGE 4: MODE COMPARISON TOOL ================= -->
+        <section id="page-compare" class="hidden space-y-6">
+            <div class="bg-white p-6 sm:p-8 rounded-2xl border border-gray-200 shadow-sm space-y-6">
+                <div>
+                    <h2 class="text-2xl font-bold text-gray-900">Compare Ventilator Modes (呼吸器模式多維比較)</h2>
+                    <p class="text-xs text-gray-500">選擇 2–3 種模式進行核心控制變數、不同步風險與生理適合度橫向比對。</p>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">Mode A</label>
+                        <select id="compare-select-a" onchange="renderModeComparisonTable()" class="w-full p-2 border border-gray-300 rounded-lg text-xs">
+                            <option value="vc_ac" selected>Volume Control (VC-A/C)</option>
+                            <option value="pc_ac">Pressure Control (PC-A/C)</option>
+                            <option value="prvc">PRVC / Autoflow</option>
+                            <option value="psv">Pressure Support (PSV)</option>
+                            <option value="aprv">APRV / BiLevel</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">Mode B</label>
+                        <select id="compare-select-b" onchange="renderModeComparisonTable()" class="w-full p-2 border border-gray-300 rounded-lg text-xs">
+                            <option value="vc_ac">Volume Control (VC-A/C)</option>
+                            <option value="pc_ac" selected>Pressure Control (PC-A/C)</option>
+                            <option value="prvc">PRVC / Autoflow</option>
+                            <option value="psv">Pressure Support (PSV)</option>
+                            <option value="aprv">APRV / BiLevel</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">Mode C (Optional)</label>
+                        <select id="compare-select-c" onchange="renderModeComparisonTable()" class="w-full p-2 border border-gray-300 rounded-lg text-xs">
+                            <option value="none">None (無)</option>
+                            <option value="prvc" selected>PRVC / Autoflow</option>
+                            <option value="psv">Pressure Support (PSV)</option>
+                            <option value="aprv">APRV / BiLevel</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Comparison Table -->
+                <div class="overflow-x-auto">
+                    <table class="w-full text-xs text-left border-collapse">
+                        <thead>
+                            <tr id="compare-table-head" class="bg-amber-100 text-amber-900 font-bold border-b border-amber-200">
+                                <th class="p-3 border-r border-amber-200">Feature 比較項目</th>
+                                <!-- Mode headers injected -->
+                            </tr>
+                        </thead>
+                        <tbody id="compare-table-body" class="divide-y divide-gray-200">
+                            <!-- Comparison rows injected -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- ================= PAGE 5: LEARNING MODE ================= -->
+        <section id="page-learning" class="hidden space-y-6">
+            <div class="bg-white p-6 sm:p-8 rounded-2xl border border-gray-200 shadow-sm space-y-6">
+                <div>
+                    <h2 class="text-2xl font-bold text-gray-900">Interactive Clinical Cases 臨床互動案例教學</h2>
+                    <p class="text-xs text-gray-500">包含 10 大經典重症呼吸器個案。先自行選擇通氣策略，再對照專家解析與常見錯誤。</p>
+                </div>
+
+                <!-- Case Selector Tabs -->
+                <div class="flex flex-wrap gap-2 text-xs font-semibold border-b border-gray-200 pb-3" id="case-tabs-container">
+                    <!-- Case tabs injected -->
+                </div>
+
+                <!-- Case Scenario Card -->
+                <div id="case-detail-container" class="space-y-6 bg-slate-50 p-6 rounded-2xl border border-slate-200">
+                    <!-- Case details injected -->
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- EXPLAIN MODE MODAL -->
+    <div id="modal-explain-mode" class="fixed inset-0 bg-black/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-8 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between border-b pb-3">
+                <h3 id="modal-explain-title" class="text-xl font-bold text-gray-900">Mode Mechanics 模式機制解析</h3>
+                <button onclick="closeExplainModeModal()" class="text-gray-400 hover:text-gray-600 text-lg"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <div id="modal-explain-body" class="space-y-4 text-xs text-gray-700">
+                <!-- Content dynamically injected -->
+            </div>
+        </div>
+    </div>
+
+    <!-- RULE TRANSPARENCY TRACEABILITY MODAL -->
+    <div id="modal-rule-trace" class="fixed inset-0 bg-black/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-8 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between border-b pb-3">
+                <h3 class="text-xl font-bold text-gray-900 flex items-center gap-2">
+                    <i class="fa-solid fa-diagram-project text-amber-600"></i> 推演鏈追溯 (Traceability Chain)
+                </h3>
+                <button onclick="closeRuleTransparencyModal()" class="text-gray-400 hover:text-gray-600 text-lg"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <div id="modal-trace-body" class="space-y-4 text-xs">
+                <!-- Trace chain steps injected -->
+            </div>
+        </div>
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="bg-white border-t border-gray-200 py-6 text-center text-xs text-gray-500">
+        <div class="max-w-7xl mx-auto px-4 space-y-1">
+            <p class="font-semibold text-gray-700">Ventilator Navigator｜成人呼吸器模式互動決策助手</p>
+            <p>For adult clinical education and decision support. Final ventilator management requires bedside clinical assessment.</p>
+        </div>
+    </footer>
+
+    <!-- JAVASCRIPT APPLICATION LOGIC -->
+    <script>
+        let appState = {
+            currentPage: 'home',
+            userMode: 'guided',
+            wizardStep: 1,
+            patientData: {},
+            derivedMetrics: {},
+            decisionResult: null
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            calculateDerivedMetrics();
+            renderModeComparisonTable();
+            renderLearningCasesTabs();
+        });
+
+        function navigateTo(pageId) {
+            appState.currentPage = pageId;
+            const pages = ['home', 'assessment', 'compare', 'learning', 'results'];
+            pages.forEach(p => {
+                const el = document.getElementById(`page-${p}`);
+                if (el) {
+                    if (p === pageId) el.classList.remove('hidden');
+                    else el.classList.add('hidden');
+                }
+            });
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function setAppUserMode(mode) {
+            appState.userMode = mode;
+            const btnGuided = document.getElementById('mode-btn-guided');
+            const btnExpert = document.getElementById('mode-btn-expert');
+            const explainers = document.querySelectorAll('.guided-explainer');
+            const expertPanel = document.getElementById('expert-mode-panel');
+            const wizardContainer = document.getElementById('wizard-progress-container');
+
+            if (mode === 'guided') {
+                btnGuided.className = "px-3 py-1.5 rounded-md text-amber-900 bg-white shadow-xs font-semibold flex items-center gap-1";
+                btnExpert.className = "px-3 py-1.5 rounded-md text-gray-600 hover:text-gray-900 flex items-center gap-1";
+                explainers.forEach(el => el.classList.remove('hidden'));
+                expertPanel.classList.add('hidden');
+                wizardContainer.classList.remove('hidden');
+            } else {
+                btnExpert.className = "px-3 py-1.5 rounded-md text-amber-900 bg-white shadow-xs font-semibold flex items-center gap-1";
+                btnGuided.className = "px-3 py-1.5 rounded-md text-gray-600 hover:text-gray-900 flex items-center gap-1";
+                explainers.forEach(el => el.classList.add('hidden'));
+                expertPanel.classList.remove('hidden');
+                wizardContainer.classList.add('hidden');
+            }
+        }
+
+        function syncExpertInputs() {
+            document.getElementById('input-height').value = document.getElementById('expert-height').value;
+            document.getElementById('input-weight').value = document.getElementById('expert-weight').value;
+            document.getElementById('input-pao2').value = document.getElementById('expert-pao2').value;
+            document.getElementById('input-fio2').value = document.getElementById('expert-fio2').value;
+            document.getElementById('input-ph').value = document.getElementById('expert-ph').value;
+            document.getElementById('input-paco2').value = document.getElementById('expert-paco2').value;
+            document.getElementById('input-pplat').value = document.getElementById('expert-pplat').value;
+            document.getElementById('input-total-peep').value = document.getElementById('expert-peep').value;
+            document.getElementById('input-auto-peep').value = document.getElementById('expert-auto-peep').value;
+            document.getElementById('input-drive-status').value = document.getElementById('expert-drive').value;
+            calculateDerivedMetrics();
+        }
+
+        function changeWizardStep(delta) {
+            const nextStep = appState.wizardStep + delta;
+            if (nextStep >= 1 && nextStep <= 13) {
+                document.getElementById(`step-panel-${appState.wizardStep}`).classList.add('hidden');
+                appState.wizardStep = nextStep;
+                document.getElementById(`step-panel-${appState.wizardStep}`).classList.remove('hidden');
+
+                const percent = Math.round((appState.wizardStep / 13) * 100);
+                document.getElementById('wizard-step-title').innerText = `Step ${appState.wizardStep} / 13: ${getStepName(appState.wizardStep)}`;
+                document.getElementById('wizard-step-percent').innerText = `${percent}% Completed`;
+                document.getElementById('wizard-progress-bar').style.width = `${percent}%`;
+
+                for (let i = 1; i <= 13; i++) {
+                    const chip = document.getElementById(`chip-step-${i}`);
+                    if (chip) {
+                        if (i === appState.wizardStep) {
+                            chip.className = "px-2 py-1 rounded bg-amber-100 text-amber-800 font-bold";
+                        } else if (i < appState.wizardStep) {
+                            chip.className = "px-2 py-1 rounded bg-emerald-100 text-emerald-800 font-medium";
+                        } else {
+                            chip.className = "px-2 py-1 rounded bg-gray-100 text-gray-600";
+                        }
+                    }
+                }
+
+                const btnPrev = document.getElementById('btn-prev-step');
+                const btnNext = document.getElementById('btn-next-step');
+                const btnSubmit = document.getElementById('btn-submit-assessment');
+
+                if (appState.wizardStep === 1) btnPrev.classList.add('hidden');
+                else btnPrev.classList.remove('hidden');
+
+                if (appState.wizardStep === 13) {
+                    btnNext.classList.add('hidden');
+                    btnSubmit.classList.remove('hidden');
+                } else {
+                    btnNext.classList.remove('hidden');
+                    btnSubmit.classList.add('hidden');
+                }
+            }
+        }
+
+        function getStepName(step) {
+            const names = [
+                "", "Patient Profile", "Indications", "Airway", "Neuro & Sedation",
+                "Spontaneous Drive", "Oxygenation", "ABG & Ventilation", "Lung Mechanics",
+                "Obstructive Panel", "Hemodynamics", "Synchrony", "Special Conditions", "Current Ventilator"
+            ];
+            return names[step] || "";
+        }
+
+        function toggleNivSection() {
+            const airwayVal = document.getElementById('input-airway-type').value;
+            const nivPanel = document.getElementById('panel-niv-checks');
+            if (airwayVal === 'niv_mask') nivPanel.classList.remove('hidden');
+            else nivPanel.classList.add('hidden');
+        }
+
+        function calculateDerivedMetrics() {
+            const height = parseFloat(document.getElementById('input-height').value) || 0;
+            const weight = parseFloat(document.getElementById('input-weight').value) || 0;
+            const sex = document.getElementById('input-sex').value;
+            const vt = 420;
+
+            let pbw = null;
+            if (height > 0) {
+                if (sex === 'male') pbw = 50 + 0.91 * (height - 152.4);
+                else pbw = 45.5 + 0.91 * (height - 152.4);
+            }
+
+            let bmi = (height > 0 && weight > 0) ? (weight / Math.pow(height / 100, 2)).toFixed(1) : null;
+            let vt_pbw = (pbw && pbw > 0) ? (vt / pbw).toFixed(2) : null;
+
+            document.getElementById('display-bmi').innerText = bmi ? `${bmi} kg/m²` : "N/A";
+            document.getElementById('display-pbw').innerText = pbw ? `${pbw.toFixed(1)} kg` : "N/A";
+            document.getElementById('display-vt-pbw-preview').innerText = vt_pbw ? `${vt_pbw} mL/kg PBW` : "N/A";
+
+            const pao2 = parseFloat(document.getElementById('input-pao2').value) || 0;
+            const fio2 = parseFloat(document.getElementById('input-fio2').value) || 0.21;
+            let pf = (pao2 > 0 && fio2 > 0) ? (pao2 / fio2).toFixed(1) : null;
+            let pfText = "N/A";
+            if (pf) {
+                if (pf <= 100) pfText = `${pf} mmHg (Severe Hypoxemia)`;
+                else if (pf <= 200) pfText = `${pf} mmHg (Moderate Hypoxemia)`;
+                else if (pf <= 300) pfText = `${pf} mmHg (Mild Hypoxemia)`;
+                else pfText = `${pf} mmHg (Normal / Mild)`;
+            }
+            document.getElementById('display-pf-ratio').innerText = pfText;
+
+            const ph = parseFloat(document.getElementById('input-ph').value) || 7.40;
+            const paco2 = parseFloat(document.getElementById('input-paco2').value) || 40;
+            const hco3 = parseFloat(document.getElementById('input-hco3').value) || 24;
+            let abgText = "Normal Acid-Base Status";
+            if (ph < 7.35) {
+                if (paco2 > 45 && hco3 < 22) abgText = "Mixed Acidosis (Respiratory + Metabolic)";
+                else if (paco2 > 45) abgText = "Respiratory Acidosis";
+                else if (hco3 < 22) abgText = "Metabolic Acidosis";
+            } else if (ph > 7.45) {
+                if (paco2 < 35) abgText = "Respiratory Alkalosis";
+                else if (hco3 > 26) abgText = "Metabolic Alkalosis";
+            }
+            document.getElementById('abg-result-text').innerText = abgText;
+
+            const pplat = parseFloat(document.getElementById('input-pplat').value) || 0;
+            const totalPeep = parseFloat(document.getElementById('input-total-peep').value) || 0;
+            let dp = (pplat > 0) ? (pplat - totalPeep) : null;
+            let cstat = (dp && dp > 0) ? (vt / dp).toFixed(1) : null;
+
+            document.getElementById('display-driving-pressure').innerText = dp ? `${dp.toFixed(1)} cmH₂O ${dp > 14 ? '(Elevated > 14)' : '(Normal ≤ 14)'}` : "Unavailable (Pplat Missing)";
+            document.getElementById('display-cstat').innerText = cstat ? `${cstat} mL/cmH₂O` : "Unavailable";
+
+            appState.derivedMetrics = { pbw, vt_pbw, pf, dp, cstat, bmi, ph, paco2, hco3 };
+        }
+
+        function loadExamplePatient() {
+            document.getElementById('input-age').value = 65;
+            document.getElementById('input-sex').value = 'male';
+            document.getElementById('input-height').value = 170;
+            document.getElementById('input-weight').value = 70;
+            document.getElementById('input-drive-status').value = 'adequate';
+            document.getElementById('input-pao2').value = 65;
+            document.getElementById('input-fio2').value = 0.70;
+            document.getElementById('input-peep').value = 10;
+            document.getElementById('input-ph').value = 7.31;
+            document.getElementById('input-paco2').value = 48;
+            document.getElementById('input-hco3').value = 24;
+            document.getElementById('input-ppeak').value = 35;
+            document.getElementById('input-pplat').value = 28;
+            document.getElementById('input-total-peep').value = 10;
+
+            calculateDerivedMetrics();
+            alert("已成功載入 ARDS 典型示範個案數據！點擊 [執行臨床分析] 或繼續完成評估。");
+            navigateTo('assessment');
+        }
+
+        function resetPatientData() {
+            document.getElementById('input-age').value = 60;
+            document.getElementById('input-height').value = 165;
+            document.getElementById('input-weight').value = 65;
+            calculateDerivedMetrics();
+            alert("數據已重置。");
+        }
+
+        function runClinicalDecisionEngine() {
+            calculateDerivedMetrics();
+            const drive = document.getElementById('input-drive-status').value;
+            const pf = appState.derivedMetrics.pf;
+            const dp = appState.derivedMetrics.dp;
+            const ph = appState.derivedMetrics.ph;
+            const hco3 = appState.derivedMetrics.hco3;
+            const brand = document.getElementById('input-brand').value;
+
+            let alerts = [];
+            if (pf && pf <= 100) {
+                alerts.push({
+                    level: 'danger',
+                    title: '🚨 Severe Hypoxemia (P/F ≤ 100 mmHg)',
+                    msg: '重度低氧血症！需立即進行床邊檢視，評估 PEEP 滴定、肺復張與 俯臥位通氣 (Prone Positioning)。'
+                });
+            }
+            if (dp && dp > 14) {
+                alerts.push({
+                    level: 'danger',
+                    title: '🚨 High Driving Pressure (ΔP > 14 cmH₂O)',
+                    msg: '驅動壓過高！提示肺損傷風險上升。請調低潮氣量 $V_T$ 或重新滴定 PEEP。'
+                });
+            }
+            if (ph < 7.20 && hco3 < 15) {
+                alerts.push({
+                    level: 'danger',
+                    title: '🚨 Severe Metabolic Acidosis Risk',
+                    msg: '重度代謝性酸中毒！嚴禁任意降低每分鐘通氣量。喪失代償性過度通氣可致心血管驟停！'
+                });
+            }
+
+            let preferredFamily = {};
+            let reasoningWhy = [];
+            let reasoningMonitor = [];
+            let reasoningRisks = [];
+            let reasoningReconsider = [];
+
+            if (drive === 'none' || drive === 'weak') {
+                preferredFamily = {
+                    titleZh: "壓力控制/輔助通氣 Mode Family",
+                    titleEn: "Pressure-Targeted Assist/Control Ventilation (PC-A/C)",
+                    confidence: "High",
+                    mappings: getBrandMappings("pc_ac", brand)
+                };
+                reasoningWhy.push("病人缺乏可靠自發呼吸，需 Full Ventilatory Support。");
+                reasoningWhy.push("壓力控制可限制最高氣道壓，保護受損肺泡。");
+                reasoningMonitor.push("送出之 Delivered $V_T$ (隨順應性變化而波動)。");
+                reasoningMonitor.push("總每分鐘通氣量 $V_E$ 與 PaCO₂。");
+                reasoningRisks.push("若肺順應性突然惡化， Delivered $V_T$ 可能暴跌導致通氣不足。");
+                reasoningReconsider.push("當病人恢復強烈自發呼吸力量時，轉為 Assisted 或 Spontaneous Mode。");
+            } else {
+                preferredFamily = {
+                    titleZh: "雙重控制 / 自適應壓力通氣 Mode Family",
+                    titleEn: "Dual-Control / Adaptive Pressure Ventilation (PRVC / Autoflow / VC+)",
+                    confidence: "High",
+                    mappings: getBrandMappings("prvc", brand)
+                };
+                reasoningWhy.push("病人具備自發呼吸驅動，且仍需要實質通氣支持。");
+                reasoningWhy.push("結合壓力平臺波形之舒適度與目標潮氣量 ($V_T$) 之預測性。");
+                reasoningMonitor.push("呼吸器自動調整之 Inspiratory Pressure level。");
+                reasoningMonitor.push("有無 Double Triggering 或 Flow Starvation 不同步。");
+                reasoningRisks.push("強烈自主呼吸可能「欺騙」演算法，導致壓力過度調低與通氣不足。");
+                reasoningReconsider.push("當病人呼吸肌疲勞減輕且準備脫機時，轉為 PSV。");
+            }
+
+            renderResultsPage(alerts, preferredFamily, reasoningWhy, reasoningMonitor, reasoningRisks, reasoningReconsider);
+            navigateTo('results');
+        }
+
+        function getBrandMappings(modeKey, brand) {
+            const map = {
+                pc_ac: { Hamilton: "PCV+", Dräger: "PC-BIPAP / PC-AC", Servo: "Pressure Control", PB: "PCV", GE: "PCV-A/C" },
+                prvc: { Hamilton: "APVcmv", Dräger: "AutoFlow", Servo: "PRVC", PB: "VC+", GE: "AutoFlow / PRVC" }
+            };
+            return map[modeKey] || { Hamilton: "Standard Mode" };
+        }
+
+        function renderResultsPage(alerts, preferred, why, monitor, risks, reconsider) {
+            const alertBox = document.getElementById('safety-alerts-container');
+            alertBox.innerHTML = alerts.map(a => `
+                <div class="p-4 rounded-xl bg-red-50 border-2 border-red-500 text-red-900 flex items-start gap-3">
+                    <i class="fa-solid fa-triangle-exclamation text-red-600 text-xl mt-0.5"></i>
+                    <div>
+                        <h4 class="font-bold text-sm">${a.title}</h4>
+                        <p class="text-xs text-red-800">${a.msg}</p>
+                    </div>
+                </div>
+            `).join('');
+
+            document.getElementById('res-preferred-title-zh').innerText = preferred.titleZh;
+            document.getElementById('res-preferred-title-en').innerText = preferred.titleEn;
+            
+            const chipContainer = document.getElementById('res-manufacturer-chips');
+            chipContainer.innerHTML = Object.entries(preferred.mappings).map(([b, m]) => `
+                <span class="px-2.5 py-1 rounded-md bg-amber-100 text-amber-900 border border-amber-200 font-medium">
+                    ${b}: <strong>${m}</strong>
+                </span>
+            `).join('');
+
+            document.getElementById('res-reasoning-why').innerHTML = why.map(item => `<li>${item}</li>`).join('');
+            document.getElementById('res-reasoning-monitor').innerHTML = monitor.map(item => `<li>${item}</li>`).join('');
+            document.getElementById('res-reasoning-risks').innerHTML = risks.map(item => `<li>${item}</li>`).join('');
+            document.getElementById('res-reasoning-reconsider').innerHTML = reconsider.map(item => `<li>${item}</li>`).join('');
+
+            const paramBody = document.getElementById('res-parameters-table-body');
+            paramBody.innerHTML = `
+                <tr>
+                    <td class="p-3 font-semibold">$V_T$ Target 潮氣量目標</td>
+                    <td class="p-3 font-bold text-amber-900">6.0 mL/kg PBW (${(appState.derivedMetrics.pbw * 6 || 396).toFixed(0)} mL)</td>
+                    <td class="p-3 text-gray-600">依據 ARDS 肺保護指引 (4–8 mL/kg PBW)，預防容積傷。</td>
+                </tr>
+                <tr>
+                    <td class="p-3 font-semibold">PEEP Target 呼氣末正壓</td>
+                    <td class="p-3 font-bold text-amber-900">10–12 cmH₂O</td>
+                    <td class="p-3 text-gray-600">防止萎陷肺泡再塌陷 (Atelec-trauma) 並改善氧合。</td>
+                </tr>
+                <tr>
+                    <td class="p-3 font-semibold">Respiratory Rate (RR)</td>
+                    <td class="p-3 font-bold text-amber-900">20–24 bpm</td>
+                    <td class="p-3 text-gray-600">維持每分鐘通氣量 ($V_E$) 並允許適度允許性高碳酸血症 (Permissive Hypercapnia)。</td>
+                </tr>
+            `;
+
+            const dashGrid = document.getElementById('res-safety-dashboard-grid');
+            dashGrid.innerHTML = `
+                <div class="p-3.5 rounded-xl border border-amber-300 bg-amber-50 text-center">
+                    <span class="block text-xs text-amber-800 font-medium">$V_T / PBW$</span>
+                    <span class="text-lg font-bold text-amber-900">${appState.derivedMetrics.vt_pbw || "N/A"} mL/kg</span>
+                    <span class="text-[10px] text-amber-700 block">Acceptable (4-8)</span>
+                </div>
+                <div class="p-3.5 rounded-xl border border-red-300 bg-red-50 text-center">
+                    <span class="block text-xs text-red-800 font-medium">$P_{plat}$ 平台壓</span>
+                    <span class="text-lg font-bold text-red-900">28 cmH₂O</span>
+                    <span class="text-[10px] text-red-700 block">Attention (Limit ≤30)</span>
+                </div>
+                <div class="p-3.5 rounded-xl border border-red-300 bg-red-50 text-center">
+                    <span class="block text-xs text-red-800 font-medium">Driving Pressure $\Delta P$</span>
+                    <span class="text-lg font-bold text-red-900">${appState.derivedMetrics.dp || "N/A"} cmH₂O</span>
+                    <span class="text-[10px] text-red-700 block">High Risk (> 14)</span>
+                </div>
+                <div class="p-3.5 rounded-xl border border-emerald-300 bg-emerald-50 text-center">
+                    <span class="block text-xs text-emerald-800 font-medium">Auto-PEEP</span>
+                    <span class="text-lg font-bold text-emerald-900">0 cmH₂O</span>
+                    <span class="text-[10px] text-emerald-700 block">Acceptable</span>
+                </div>
+            `;
+        }
+
+        function renderModeComparisonTable() {
+            const modeA = document.getElementById('compare-select-a').value;
+            const modeB = document.getElementById('compare-select-b').value;
+            const modeC = document.getElementById('compare-select-c').value;
+
+            const modeData = {
+                vc_ac: { name: "Volume Control (VC-A/C)", var: "Volume ($V_T$)", pred: "High (Guaranteed $V_T$)", reqSpon: "No", backup: "Yes (Set RR)", sync: "Flow starvation risk if drive high" },
+                pc_ac: { name: "Pressure Control (PC-A/C)", var: "Pressure ($P_{insp}$)", pred: "Variable (Depends on C & R)", reqSpon: "No", backup: "Yes (Set RR)", sync: "Decelerating flow improves comfort" },
+                prvc: { name: "PRVC / Autoflow", var: "Adaptive Pressure", pred: "Moderate-High Target", reqSpon: "No", backup: "Yes (Set RR)", sync: "Good, but drive changes confuse engine" },
+                psv: { name: "Pressure Support (PSV)", var: "Pressure Support", pred: "Patient Dependent", reqSpon: "Yes (Required)", backup: "Apnea Ventilation", sync: "High patient control, cycling risk" },
+                aprv: { name: "APRV / BiLevel", var: "Airway Pressure", pred: "Unrestricted Spon", reqSpon: "Preferred", backup: "Release ventilation", sync: "Advanced, requires expertise" }
+            };
+
+            const selectedKeys = [modeA, modeB];
+            if (modeC !== 'none') selectedKeys.push(modeC);
+
+            const headRow = document.getElementById('compare-table-head');
+            headRow.innerHTML = `<th class="p-3 border-r border-amber-200">Feature 比較項目</th>` +
+                selectedKeys.map(k => `<th class="p-3 border-r border-amber-200">${modeData[k].name}</th>`).join('');
+
+            const body = document.getElementById('compare-table-body');
+            body.innerHTML = `
+                <tr><td class="p-3 font-bold border-r">Controlled Variable 控制變數</td>${selectedKeys.map(k => `<td class="p-3 border-r">${modeData[k].var}</td>`).join('')}</tr>
+                <tr><td class="p-3 font-bold border-r">$V_T$ Predictability 潮氣量預測性</td>${selectedKeys.map(k => `<td class="p-3 border-r">${modeData[k].pred}</td>`).join('')}</tr>
+                <tr><td class="p-3 font-bold border-r">Requires Spontaneous Drive 需自發呼吸</td>${selectedKeys.map(k => `<td class="p-3 border-r">${modeData[k].reqSpon}</td>`).join('')}</tr>
+                <tr><td class="p-3 font-bold border-r">Backup Ventilation 機制</td>${selectedKeys.map(k => `<td class="p-3 border-r">${modeData[k].backup}</td>`).join('')}</tr>
+                <tr><td class="p-3 font-bold border-r">Synchrony Considerations 不同步考量</td>${selectedKeys.map(k => `<td class="p-3 border-r">${modeData[k].sync}</td>`).join('')}</tr>
+            `;
+        }
+
+        const casesList = [
+            { id: 1, title: "Case 1: Severe ARDS", desc: "65yo M, Pneumonia, P/F 92, Cstat 22 mL/cmH2O, high driving pressure." },
+            { id: 2, title: "Case 2: COPD Auto-PEEP", desc: "72yo F, severe COPD, Auto-PEEP 12 cmH2O, expiratory flow not reaching baseline." },
+            { id: 3, title: "Case 3: Severe Asthma", desc: "30yo M, status asthmaticus, high Ppeak (50), normal Pplat (22)." },
+            { id: 4, title: "Case 4: Post-Op Waking Up", desc: "55yo F, post-abdominal surgery, waking up with good drive." },
+            { id: 5, title: "Case 5: Neuromuscular Weakness", desc: "45yo M, Guillain-Barré Syndrome, weak respiratory effort." },
+            { id: 6, title: "Case 6: Severe Metabolic Acidosis", desc: "25yo M, DKA, pH 7.05, HCO3 6, compensatory hyperventilation." },
+            { id: 7, title: "Case 7: Cardiogenic Pulmonary Edema", desc: "68yo M, Acute Pulmonary Edema, candidate for NIV Bilevel." },
+            { id: 8, title: "Case 8: Ready for SBT", desc: "60yo M, resolving pneumonia, P/F 280 on PEEP 5, low support." },
+            { id: 9, title: "Case 9: High Ppeak Normal Pplat", desc: "68yo F, sudden high pressure alarm, Ppeak 42, Pplat 20." },
+            { id: 10, title: "Case 10: Double Triggering", desc: "50yo M, high respiratory drive on VC-A/C, breath stacking observed." }
+        ];
+
+        function renderLearningCasesTabs() {
+            const container = document.getElementById('case-tabs-container');
+            container.innerHTML = casesList.map(c => `
+                <button onclick="selectLearningCase(${c.id})" class="px-3 py-1.5 rounded-lg border border-gray-200 hover:border-amber-500 hover:bg-amber-50">
+                    ${c.title}
+                </button>
+            `).join('');
+
+            selectLearningCase(1);
+        }
+
+        function selectLearningCase(caseId) {
+            const c = casesList.find(x => x.id === caseId);
+            const detail = document.getElementById('case-detail-container');
+            detail.innerHTML = `
+                <div>
+                    <span class="px-2.5 py-1 rounded bg-amber-200 text-amber-900 font-bold text-xs">Interactive Teaching Scenario</span>
+                    <h3 class="text-xl font-bold text-gray-900 mt-2">${c.title}</h3>
+                    <p class="text-xs text-gray-700 mt-1">${c.desc}</p>
+                </div>
+
+                <div class="bg-white p-4 rounded-xl border border-gray-200 space-y-3">
+                    <label class="block text-xs font-bold text-gray-900">Your Decision: Which Mode Strategy would you select?</label>
+                    <select id="case-user-choice" class="w-full p-2 border rounded-lg text-xs">
+                        <option value="pc_ac">Pressure Control A/C with Lung Protective Targets</option>
+                        <option value="vc_ac">Volume Control A/C</option>
+                        <option value="psv">Pressure Support (PSV) Alone</option>
+                        <option value="niv">NIV Bilevel</option>
+                    </select>
+                    <button onclick="submitCaseDecision(${c.id})" class="px-4 py-2 bg-amber-600 text-white rounded-lg text-xs font-bold hover:bg-amber-700">
+                        Submit Decision & View Expert Analysis
+                    </button>
+                </div>
+
+                <div id="case-feedback-box" class="hidden p-4 rounded-xl bg-white border border-gray-200 space-y-2 text-xs">
+                    <!-- Feedback injected -->
+                </div>
+            `;
+        }
+
+        function submitCaseDecision(caseId) {
+            const box = document.getElementById('case-feedback-box');
+            box.classList.remove('hidden');
+            box.innerHTML = `
+                <h4 class="font-bold text-sm text-emerald-800 flex items-center gap-1">
+                    <i class="fa-solid fa-circle-check"></i> Expert Analysis & Clinical Rationale
+                </h4>
+                <p class="text-gray-700">
+                    <strong>Preferred Strategy:</strong> 肺保護通氣策略 (Lung-Protective Ventilation Target $V_T$ 4-8 mL/kg PBW, $P_{plat} \le 30$, $\Delta P \le 14$).<br/>
+                    <strong>Common Pitfalls:</strong> 避免單憑診斷名稱自動選取 Mode，應依據即時呼吸驅動與順應性動態調整。
+                </p>
+            `;
+        }
+
+        function openExplainModeModal() {
+            document.getElementById('modal-explain-mode').classList.remove('hidden');
+            document.getElementById('modal-explain-body').innerHTML = `
+                <div class="space-y-3">
+                    <p><strong>What the ventilator controls:</strong> Inspiratory Pressure level ($P_{insp}$) & Inspiratory Time ($T_i$).</p>
+                    <p><strong>What the patient controls:</strong> Delivered Tidal Volume ($V_T$) and Respiratory Rate (if spontaneous effort present).</p>
+                    <p><strong>Trigger:</strong> Pressure or Flow trigger.</p>
+                    <p><strong>Cycle:</strong> Time-cycled.</p>
+                </div>
+            `;
+        }
+        function closeExplainModeModal() {
+            document.getElementById('modal-explain-mode').classList.add('hidden');
+        }
+
+        function openRuleTransparencyModal() {
+            document.getElementById('modal-rule-trace').classList.remove('hidden');
+            document.getElementById('modal-trace-body').innerHTML = `
+                <div class="space-y-3">
+                    <div class="p-3 bg-amber-50 rounded border border-amber-200">
+                        <span class="font-bold block text-amber-900">1. Patient Findings:</span>
+                        <p class="text-amber-800">P/F 92.9 mmHg, Driving Pressure 18 cmH2O, Adequate Spontaneous Effort.</p>
+                    </div>
+                    <div class="p-3 bg-blue-50 rounded border border-blue-200">
+                        <span class="font-bold block text-blue-900">2. Detected Physiology & Clinical Goal:</span>
+                        <p class="text-blue-800">Severe ARDS + Reduced Compliance $ightarrow$ Lung Protective Target ($\Delta P \le 14$).</p>
+                    </div>
+                    <div class="p-3 bg-emerald-50 rounded border border-emerald-200">
+                        <span class="font-bold block text-emerald-900">3. Rule Citation:</span>
+                        <p class="text-emerald-800">ATS/ESICM/SCCM Mechanical Ventilation in ARDS Guideline (2024).</p>
+                    </div>
+                </div>
+            `;
+        }
+        function closeRuleTransparencyModal() {
+            document.getElementById('modal-rule-trace').classList.add('hidden');
+        }
+    </script>
+</body>
+</html>
