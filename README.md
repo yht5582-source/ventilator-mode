@@ -15,6 +15,7 @@ Ventilator Navigator 是一個專為 ICU 專科醫師、非重症/胸腔科醫�
 - **即時高危警訊 (Safety Dashboard)**：自動監測平台壓 (Pplat > 30)、驅動壓 (ΔP > 14)、Auto-PEEP、嚴重酸失衡代償流失與休克風險，優先顯示紅燈床邊檢視警訊。
 - **呼吸器模式多維比較 (Mode Comparison Matrix)**：提供 2–3 種模式在控制變數、潮氣量預測性與不同步風險之橫向比對。
 - **10 大臨床互動教學案例 (10 Interactive Clinical Cases)**：包含 Severe ARDS、COPD Auto-PEEP、Asthma、DKA 代償酸中毒、SBT 脫機準備等臨床教學個案。
+- **示範病例、考題與心智圖**：6 個完整推演病例、20 題考題（含高階）與判讀到處置的心智圖。
 - **推演鏈透明追溯 (Rule Traceability Chain)**：點擊即可查看「病人數據 → 偵測生理 → 臨床目標 → 建議模式」推演歷程。
 
 ---
@@ -38,6 +39,13 @@ Ventilator Navigator 是一個專為 ICU 專科醫師、非重症/胸腔科醫�
 - 修正：LaTeX 原始碼直接顯示、推演鏈中 `\rightarrow` 變成亂碼、不存在的圖示與 Tailwind class、Step 1 顯示「上一步」、重置只清 3 欄。
 - Expert Mode 改為單頁顯示所有欄位並與快速面板雙向同步；手機版導覽列；結果頁可複製摘要與列印。
 - 測試：`node tests.cjs`（99 項，含 10 個教學案例的引擎結果檢查）。
+
+## 🔧 v2.1 更新（2026-11-01 教學內容）
+
+- **示範病例 6 例**（`#cases`）：HFNC 何時該放手、COPD 從 NIV 到插管、肥胖 ARDS 的平台壓、顱腦損傷遇上 ARDS、PSV 中的無效觸發、急性肺心症到 VV-ECMO。每個階段的指標與模式都由引擎算出，可一鍵載入評估工具。
+- **考題 20 題**（`#quiz`）：基礎 10 題、高階 10 題（含 ΔP<sub>occ</sub>、P0.1、跨肺壓、Reverse triggering、呼氣時間計算等），附解析與依據，不儲存作答紀錄。
+- **心智圖**（`#map`）：左為評估與判讀，右為模式與處置，可展開收合；手機為單欄。
+- 內容在 `index.html` 的 `/*DEMO-START*/`、`/*QUIZ-START*/`、`/*MAP-START*/` 區塊。測試：`node tests.cjs`。
 
 ## ⚠️ 臨床安全與免責聲明 (Clinical Disclaimer)
 

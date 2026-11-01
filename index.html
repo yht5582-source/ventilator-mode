@@ -42,6 +42,40 @@
             body { background: #fff; }
             .shadow-xl, .shadow-sm, .card-shadow { box-shadow: none !important; }
         }
+        .mm { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) 112px minmax(0, 1fr); column-gap: 44px; align-items: start; }
+        #mm-links { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+        #mm-links path { fill: none; stroke-width: 2; }
+        #mm-links path.dx { stroke: #D97706; }
+        #mm-links path.tx { stroke: #0F766E; }
+        .mm-side { position: relative; min-width: 0; }
+        .mm-center { position: relative; align-self: center; background: #92400E; color: #fff; border-radius: 14px; padding: 16px 8px; text-align: center; font-weight: 800; line-height: 1.5; }
+        .mm-col { margin-bottom: 10px; font-size: 16px; font-weight: 800; }
+        .mm-col.dx { color: #B45309; }
+        .mm-col.tx { color: #0F766E; }
+        .mm-branch { margin-bottom: 10px; }
+        .mm-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; width: 100%; border-radius: 8px; padding: 8px 12px; text-align: left; line-height: 1.4; color: #fff; }
+        .mm-branch.dx .mm-head { background: #B45309; }
+        .mm-branch.tx .mm-head { background: #0F766E; }
+        .mm-head::after { content: "＋"; grid-column: 2; grid-row: 1 / span 2; align-self: center; padding-left: 10px; }
+        .mm-head[aria-expanded="true"]::after { content: "－"; }
+        .mm-head[aria-expanded="true"] { border-radius: 8px 8px 0 0; }
+        .mm-t { font-weight: 700; font-size: 14.5px; }
+        .mm-s { font-size: 12px; opacity: .92; grid-column: 1; }
+        .mm-leaves { padding: 6px 12px; font-size: 13.5px; border: 1px solid #E2E8F0; border-top: 0; border-radius: 0 0 8px 8px; background: #fff; }
+        .mm-leaves li { padding: 4px 0; border-bottom: 1px dashed #E2E8F0; }
+        .mm-leaves li:last-child { border-bottom: 0; }
+        @media (max-width: 820px) {
+            .mm { grid-template-columns: minmax(0, 1fr); row-gap: 14px; }
+            #mm-links { display: none; }
+            .mm-center { order: -1; padding: 10px; }
+            .mm-center br { display: none; }
+        }
+        @media print {
+            .mm-leaves[hidden] { display: block !important; }
+            #mm-links { display: none; }
+            .mm { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 16px; }
+            .mm-center { display: none; }
+        }
         .step-active {
             border-color: #D97706;
             background-color: #FEF3C7;
@@ -60,7 +94,6 @@
                 </div>
                 <div>
                     <span class="hidden sm:inline font-bold text-lg text-gray-900 tracking-tight">Ventilator Navigator</span>
-                    <span class="hidden md:inline-block ml-2 text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200">成人呼吸器模式決策助手</span>
                 </div>
             </div>
 
@@ -77,12 +110,15 @@
                 </div>
 
                 <!-- Navigation Links -->
-                <nav class="hidden lg:flex items-center space-x-1 text-sm font-medium text-gray-600 whitespace-nowrap">
+                <nav class="hidden xl:flex items-center space-x-1 text-sm font-medium text-gray-600 whitespace-nowrap">
                     <button onclick="navigateTo('home')" data-nav="home" class="nav-btn px-3 py-2 rounded-md hover:bg-gray-100">首頁</button>
-                    <button onclick="navigateTo('assessment')" data-nav="assessment" class="nav-btn px-3 py-2 rounded-md hover:bg-gray-100">新評估<span class="hidden xl:inline"> Assessment</span></button>
-                    <button onclick="navigateTo('results')" data-nav="results" class="nav-btn px-3 py-2 rounded-md hover:bg-gray-100">分析結果<span class="hidden xl:inline"> Results</span></button>
-                    <button onclick="navigateTo('compare')" data-nav="compare" class="nav-btn px-3 py-2 rounded-md hover:bg-gray-100">Mode 比較<span class="hidden xl:inline"> Compare</span></button>
-                    <button onclick="navigateTo('learning')" data-nav="learning" class="nav-btn px-3 py-2 rounded-md hover:bg-gray-100">教學案例<span class="hidden xl:inline"> Cases</span></button>
+                    <button onclick="navigateTo('assessment')" data-nav="assessment" class="nav-btn px-3 py-2 rounded-md hover:bg-gray-100">新評估</button>
+                    <button onclick="navigateTo('results')" data-nav="results" class="nav-btn px-3 py-2 rounded-md hover:bg-gray-100">分析結果</button>
+                    <button onclick="navigateTo('compare')" data-nav="compare" class="nav-btn px-3 py-2 rounded-md hover:bg-gray-100">Mode 比較</button>
+                    <button onclick="navigateTo('learning')" data-nav="learning" class="nav-btn px-3 py-2 rounded-md hover:bg-gray-100">教學案例</button>
+                    <button onclick="navigateTo('cases')" data-nav="cases" class="nav-btn px-3 py-2 rounded-md hover:bg-gray-100">示範病例</button>
+                    <button onclick="navigateTo('quiz')" data-nav="quiz" class="nav-btn px-3 py-2 rounded-md hover:bg-gray-100">考題</button>
+                    <button onclick="navigateTo('map')" data-nav="map" class="nav-btn px-3 py-2 rounded-md hover:bg-gray-100">心智圖</button>
                 </nav>
 
                 <!-- Load Example & Reset -->
@@ -97,13 +133,16 @@
             </div>
         </div>
         <!-- Mobile navigation -->
-        <nav class="lg:hidden border-t border-amber-100 overflow-x-auto">
+        <nav class="xl:hidden border-t border-amber-100 overflow-x-auto">
             <div class="flex text-xs font-semibold text-gray-600 px-2 whitespace-nowrap">
                 <button onclick="navigateTo('home')" data-nav="home" class="nav-btn px-3 py-2">首頁</button>
                 <button onclick="navigateTo('assessment')" data-nav="assessment" class="nav-btn px-3 py-2">新評估</button>
                 <button onclick="navigateTo('results')" data-nav="results" class="nav-btn px-3 py-2">分析結果</button>
                 <button onclick="navigateTo('compare')" data-nav="compare" class="nav-btn px-3 py-2">Mode 比較</button>
                 <button onclick="navigateTo('learning')" data-nav="learning" class="nav-btn px-3 py-2">教學案例</button>
+                <button onclick="navigateTo('cases')" data-nav="cases" class="nav-btn px-3 py-2">示範病例</button>
+                <button onclick="navigateTo('quiz')" data-nav="quiz" class="nav-btn px-3 py-2">考題</button>
+                <button onclick="navigateTo('map')" data-nav="map" class="nav-btn px-3 py-2">心智圖</button>
             </div>
         </nav>
     </header>
@@ -175,6 +214,22 @@
                         初學者可透過 Step-by-Step 引導模式與 ⓘ 生理說明逐步學習；重症專科醫師可切換至 Expert Mode 快速輸入分析。
                     </p>
                 </div>
+            </div>
+
+            <!-- Teaching entry points -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <button onclick="navigateTo('cases')" class="text-left bg-white p-5 rounded-2xl border border-amber-100 shadow-sm hover:border-amber-400 transition">
+                    <span class="font-bold text-gray-900"><i class="fa-solid fa-user-doctor text-amber-600"></i> 示範病例 6 例</span>
+                    <span class="block text-sm text-gray-600 mt-1">病情隨時間變化，完整走一遍判斷過程。</span>
+                </button>
+                <button onclick="navigateTo('quiz')" class="text-left bg-white p-5 rounded-2xl border border-amber-100 shadow-sm hover:border-amber-400 transition">
+                    <span class="font-bold text-gray-900"><i class="fa-solid fa-clipboard-question text-amber-600"></i> 考題 20 題</span>
+                    <span class="block text-sm text-gray-600 mt-1">基礎 10 題、高階 10 題，附解析與依據。</span>
+                </button>
+                <button onclick="navigateTo('map')" class="text-left bg-white p-5 rounded-2xl border border-amber-100 shadow-sm hover:border-amber-400 transition">
+                    <span class="font-bold text-gray-900"><i class="fa-solid fa-diagram-project text-amber-600"></i> 心智圖</span>
+                    <span class="block text-sm text-gray-600 mt-1">從判讀到模式與處置，一張圖看完。</span>
+                </button>
             </div>
 
             <!-- Disclaimer Banner -->
@@ -1146,6 +1201,62 @@
             </div>
         </section>
 
+        <!-- ================= PAGE 6: DEMO CASES ================= -->
+        <section id="page-cases" class="hidden space-y-6">
+            <div class="bg-white p-6 sm:p-8 rounded-2xl border border-gray-200 shadow-sm space-y-6">
+                <div>
+                    <h2 class="text-2xl font-bold text-gray-900">示範病例 Worked Cases</h2>
+                    <p class="text-xs text-gray-500">6 個完整推演，病情會隨時間變化。「教學案例」是先讓你自己選；這裡是把判斷過程一步步走一遍。每個階段的指標與模式都由本頁引擎算出，可載入評估工具繼續調整。</p>
+                </div>
+                <div class="flex flex-wrap gap-2 text-xs font-semibold border-b border-gray-200 pb-3" id="demo-tabs"></div>
+                <div id="demo-detail" class="space-y-4 bg-slate-50 p-4 sm:p-6 rounded-2xl border border-slate-200"></div>
+            </div>
+        </section>
+
+        <!-- ================= PAGE 7: QUIZ ================= -->
+        <section id="page-quiz" class="hidden space-y-6">
+            <div class="bg-white p-6 sm:p-8 rounded-2xl border border-gray-200 shadow-sm space-y-4">
+                <div>
+                    <h2 class="text-2xl font-bold text-gray-900">考題 Exam</h2>
+                    <p class="text-xs text-gray-500">共 20 題：基礎 10 題、高階 10 題。作答後立即顯示解析與依據；不會儲存作答紀錄。</p>
+                </div>
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                    <div class="flex gap-2 text-xs font-semibold">
+                        <button data-set="all" onclick="setQuizSet('all')" class="qz-set px-3 py-1.5 rounded-lg border border-gray-200">全部</button>
+                        <button data-set="basic" onclick="setQuizSet('basic')" class="qz-set px-3 py-1.5 rounded-lg border border-gray-200">基礎</button>
+                        <button data-set="adv" onclick="setQuizSet('adv')" class="qz-set px-3 py-1.5 rounded-lg border border-gray-200">高階</button>
+                    </div>
+                    <div class="flex items-center gap-3 text-sm">
+                        <span id="qz-score" aria-live="polite"></span>
+                        <button onclick="resetQuiz()" class="px-3 py-1.5 rounded-lg border border-gray-200 text-xs font-semibold hover:bg-gray-100">重新作答</button>
+                    </div>
+                </div>
+            </div>
+            <div id="qz-list" class="space-y-4"></div>
+        </section>
+
+        <!-- ================= PAGE 8: MIND MAP ================= -->
+        <section id="page-map" class="hidden space-y-6">
+            <div class="bg-white p-4 sm:p-8 rounded-2xl border border-gray-200 shadow-sm space-y-4">
+                <div class="flex flex-wrap items-end justify-between gap-3">
+                    <div>
+                        <h2 class="text-2xl font-bold text-gray-900">心智圖 Mind Map</h2>
+                        <p class="text-xs text-gray-500">左邊是怎麼判讀，右邊是怎麼選模式與處置。點分支展開細節。</p>
+                    </div>
+                    <div class="flex gap-2 text-xs font-semibold">
+                        <button onclick="mmAll(true)" class="px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-100">全部展開</button>
+                        <button onclick="mmAll(false)" class="px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-100">全部收合</button>
+                    </div>
+                </div>
+                <div class="mm" id="mm">
+                    <svg id="mm-links" aria-hidden="true"></svg>
+                    <div class="mm-side" id="mm-dx"></div>
+                    <div class="mm-center" id="mm-center">呼吸器<br>模式<br>從生理<br>出發</div>
+                    <div class="mm-side" id="mm-tx"></div>
+                </div>
+            </div>
+        </section>
+
     </main>
 
     <!-- EXPLAIN MODE MODAL -->
@@ -1195,9 +1306,26 @@
                     <li>Oczkowski S, et al. ERS clinical practice guidelines: high-flow nasal cannula in acute respiratory failure. Eur Respir J 2022;59:2101574.</li>
                     <li>Schmidt GA, et al. Liberation from Mechanical Ventilation in Critically Ill Adults: ATS/ACCP Guideline. Am J Respir Crit Care Med 2017;195:115–119.</li>
                     <li>Tonna JE, et al. Management of Adult Patients Supported with VV-ECMO: ELSO Guideline. ASAIO J 2021;67:601–610.</li>
+                    <li>Roca O, et al. An index combining respiratory rate and oxygenation to predict outcome of nasal high-flow therapy. Am J Respir Crit Care Med 2019;199:1368–1376.</li>
+                    <li>Frat JP, et al. High-flow oxygen through nasal cannula in acute hypoxemic respiratory failure (FLORALI). N Engl J Med 2015;372:2185–2196.</li>
+                    <li>Kang BJ, et al. Failure of high-flow nasal cannula therapy may delay intubation and increase mortality. Intensive Care Med 2015;41:623–632.</li>
+                    <li>Talmor D, et al. Mechanical ventilation guided by esophageal pressure in acute lung injury. N Engl J Med 2008;359:2095–2104.</li>
+                    <li>Beitler JR, et al. Esophageal pressure-guided PEEP vs empirical high PEEP-FiO₂ (EPVent-2). JAMA 2019;321:846–857.</li>
+                    <li>Guérin C, et al. Prone positioning in severe ARDS (PROSEVA). N Engl J Med 2013;368:2159–2168.</li>
+                    <li>Moss M, et al. Early neuromuscular blockade in ARDS (ROSE). N Engl J Med 2019;380:1997–2008.</li>
+                    <li>Combes A, et al. ECMO for severe ARDS (EOLIA). N Engl J Med 2018;378:1965–1975.</li>
+                    <li>Writing Group for the ART Investigators. Lung recruitment and titrated PEEP vs low PEEP. JAMA 2017;318:1335–1345.</li>
+                    <li>Robba C, et al. Mechanical ventilation in patients with acute brain injury: ESICM consensus. Intensive Care Med 2020;46:2397–2410.</li>
+                    <li>Bertoni M, et al. A novel non-invasive method to detect excessively high respiratory effort and dynamic transpulmonary driving pressure. Crit Care 2019;23:346.</li>
+                    <li>Telias I, et al. Airway occlusion pressure as an estimate of respiratory drive and inspiratory effort. Am J Respir Crit Care Med 2020;201:1086–1098.</li>
+                    <li>Thille AW, et al. Patient-ventilator asynchrony during assisted mechanical ventilation. Intensive Care Med 2006;32:1515–1522；Reduction of asynchrony by reducing tidal volume during PSV. Intensive Care Med 2008;34:1477–1486.</li>
+                    <li>Akoumianaki E, et al. Mechanical ventilation-induced reverse-triggered breaths. Chest 2013;143:927–938；Jackson R, et al. Ann Intensive Care 2024;14:78.</li>
+                    <li>Esteban A, et al. A comparison of four methods of weaning. N Engl J Med 1995;332:345–350；Brochard L, et al. Am J Respir Crit Care Med 1994;150:896–903.</li>
+                    <li>Subirà C, et al. Pressure support vs T-piece SBT. JAMA 2019;321:2175–2182；Thille AW, et al. HIGH-WEAN. JAMA 2019;322:1465–1475；Ouellette DR, et al. ACCP/ATS liberation guideline. Chest 2017;151:166–180.</li>
+                    <li>Zhou Y, et al. Early application of APRV in ARDS. Intensive Care Med 2017;43:1648–1659.</li>
                 </ol>
             </details>
-            <p class="pt-1">v2.0 · 2026-10-25</p>
+            <p class="pt-1">v2.1 · 2026-11-01</p>
         </div>
     </footer>
 
@@ -1802,6 +1930,211 @@
         ];
         /*CASES-END*/
 
+        /*DEMO-START*/
+        // 示範病例：每個階段的 inputs 都交給 VN.analyze，expect 由 tests.cjs 核對；tiles 由引擎算出，不手打。
+        const rox = (spo2, fio2, rr) => (spo2 / fio2) / rr;
+        const NIV_OK = { conscious: true, airwayProtect: true, secretionOk: true, hemoStable: true, aspiration: false, facial: false };
+        const DEMO_CASES = [
+            { id: 1, title: 'HFNC 何時該放手', tag: 'HFNC → 插管', who: '58 歲男性，168 cm、72 kg（PBW 64 kg）。社區型肺炎，雙側浸潤，無 COPD 病史，清醒可配合。',
+              stages: [
+                { label: 'HFNC 第 2 小時', story: 'HFNC 50 L/min、FiO₂ 0.6；SpO₂ 93%、RR 30，PaO₂ 68，PaCO₂ 33。',
+                  rox: [93, 0.6, 30, '2 h'], expect: 'hfnc',
+                  inputs: { age: 58, sex: 'male', height: 168, weight: 72, cond: ['pneumonia'], ind: ['hypoxemic_failure', 'increased_wob'], airway: 'hfnc', niv: NIV_OK, gcs: 15, rass: 0, sedation: 'none', follows: true, drive: 'excessive', rrTotal: 30, rrSet: 0, spo2: 93, pao2: 68, fio2: 0.6, infiltrates: true, suspectArds: true, ph: 7.46, paco2: 33, hco3: 23, hr: 108, sbp: 128, dbp: 72 },
+                  steps: [
+                    ['先定問題', '低氧、PaCO₂ 33 沒有高碳酸血症，不走 COPD 的 Bilevel 路徑；清醒、無 NIV 禁忌。'],
+                    ['為何選 HFNC', 'FLORALI：插管率 38%（HFNC）、47%（標準氧）、50%（NIV），P = 0.18，差異不顯著；但 HFNC 的 28 天無呼吸器日數較多，90 天死亡風險也較低（NIV 對 HFNC HR 2.50）。'],
+                    ['ROX 怎麼算', '(SpO₂/FiO₂)/RR = (93/0.6)/30 = 5.17。≥ 4.88 屬插管風險較低，但只代表現在，要排定 6 h、12 h 再算。'],
+                    ['同時設好停損點', '事先寫明什麼情況要插管（ROX 下降、輔助肌使用、休克、意識變化），不要等到 SpO₂ 掉下來才討論。']
+                ] },
+                { label: 'HFNC 第 6 小時', story: 'FiO₂ 已調到 0.8，SpO₂ 90%、RR 36，出現輔助肌與矛盾呼吸；開始使用昇壓藥，BP 88/50。PaO₂ 58，pH 7.30、PaCO₂ 38、HCO₃⁻ 18。',
+                  rox: [90, 0.8, 36, '6 h'], expect: 'intubate',
+                  inputs: { age: 58, sex: 'male', height: 168, weight: 72, cond: ['pneumonia', 'sepsis'], ind: ['hypoxemic_failure', 'increased_wob', 'muscle_fatigue'], airway: 'hfnc', niv: Object.assign({}, NIV_OK, { hemoStable: false }), gcs: 14, rass: 1, sedation: 'none', follows: true, drive: 'excessive', rrTotal: 36, rrSet: 0, accessory: true, paradoxical: true, spo2: 90, pao2: 58, fio2: 0.8, infiltrates: true, suspectArds: true, ph: 7.30, paco2: 38, hco3: 18, lactate: 4.2, hr: 128, sbp: 88, dbp: 50, vasopressor: true, shock: true },
+                  steps: [
+                    ['ROX 惡化', '(90/0.8)/36 = 3.13，低於第 6 小時的失敗切點 3.47（2 h < 2.85、6 h < 3.47、12 h < 3.85）。'],
+                    ['「正常」的 PaCO₂ 其實不正常', "Winter's 預期 PaCO₂ = 1.5 × 18 + 8 ± 2 = 33–37；PaCO₂ 38 已高於代償上限，RR 36 還代償不足，代表呼吸肌快撐不住。"],
+                    ['決定插管', '休克＋呼吸肌疲勞：非侵襲支持已不適合。觀察性資料顯示 HFNC 超過 48 小時才插管者 ICU 死亡率較高（66.7% vs 39.2%），不能據此定因果，但足以提醒別拖。'],
+                    ['插管前準備', '先備好昇壓藥與輸液。插管後 VC-A/C、V<sub>T</sub> 6 mL/kg PBW（385 mL），記得 RR 要接得上原本的通氣量，再測 P<sub>plat</sub>。']
+                ] }
+              ],
+              trap: ['只看 SpO₂：調高 FiO₂ 會讓 SpO₂ 好看，ROX 才把 FiO₂ 與 RR 算進去。', 'ROX 是在肺炎病人驗證，AUC 約 0.68–0.76，只能輔助判斷，不能單獨決定插管。'],
+              src: 'Roca AJRCCM 2019（ROX）；Frat NEJM 2015（FLORALI）；Kang ICM 2015（觀察性）；ERS 2022 HFNC 指引' },
+            { id: 2, title: 'COPD 從 NIV 到插管', tag: 'NIV → 插管 → VC-A/C', who: '68 歲男性，165 cm、55 kg（PBW 62 kg）。COPD 急性惡化，平日 HCO₃⁻ 偏高。',
+              stages: [
+                { label: 'NIV 開始', story: '清醒可配合，RR 30。pH 7.26、PaCO₂ 72、HCO₃⁻ 31，PaO₂ 58（FiO₂ 0.28）。',
+                  expect: 'niv',
+                  inputs: { age: 68, sex: 'male', height: 165, weight: 55, cond: ['copd_exacerbation'], ind: ['hypercapnic_failure', 'increased_wob'], airway: 'niv_mask', niv: NIV_OK, gcs: 15, rass: 0, sedation: 'none', follows: true, drive: 'adequate', rrTotal: 30, rrSet: 0, spo2: 90, pao2: 58, fio2: 0.28, peep: 5, infiltrates: false, ph: 7.26, paco2: 72, hco3: 31, hr: 112, sbp: 142, dbp: 80 },
+                  steps: [
+                    ['判讀', '高碳酸酸中毒 pH 7.26：符合 Bilevel NIV 的強烈建議（ERS/ATS 2017），也沒有禁忌。'],
+                    ['起始設定', 'EPAP 4–5、IPAP 10–12 起，逐步調至 20–25 cmH₂O；SpO₂ 目標 88–92%，避免高氧加重高碳酸血症。'],
+                    ['為什麼不用 HFNC 取代', '工具把 HFNC 列為較不適用：它無法有效降低 PaCO₂，頂多當 NIV 休息時段的替代。'],
+                    ['約好 1–2 小時複評', 'RR、呼吸作功、pH、PaCO₂、意識都要看。pH 接近 7.25 的病人要在可立即插管的地方做。']
+                ] },
+                { label: 'NIV 第 2 小時：失敗', story: '嗜睡、GCS 8，分泌物無法咳出。pH 7.20、PaCO₂ 86、HCO₃⁻ 33。',
+                  expect: 'intubate',
+                  inputs: { age: 68, sex: 'male', height: 165, weight: 55, cond: ['copd_exacerbation'], ind: ['hypercapnic_failure', 'muscle_fatigue', 'airway_protection'], airway: 'niv_mask', niv: Object.assign({}, NIV_OK, { conscious: false, secretionOk: false }), gcs: 8, rass: -3, sedation: 'none', follows: false, drive: 'weak', rrTotal: 34, rrSet: 0, fatigue: true, spo2: 91, pao2: 62, fio2: 0.3, peep: 5, infiltrates: false, ph: 7.20, paco2: 86, hco3: 33, hr: 118, sbp: 136, dbp: 76 },
+                  steps: [
+                    ['NIV 失敗的訊號', 'pH 與 PaCO₂ 都惡化，加上意識下降與分泌物：已同時違反兩項 NIV 使用條件。'],
+                    ['不要再加壓力硬撐', '這時提高 IPAP 不解決氣道保護問題，延遲插管才是風險。'],
+                    ['插管時就要想 auto-PEEP', '手捏甦醒球別太快。COPD 病人插管後的低血壓，常常就是氣體排不出去。']
+                ] },
+                { label: '插管後：血壓掉了', story: '插管、深度鎮靜後，BP 78/44。V<sub>T</sub> 400、RR 12、Set PEEP 5、Total PEEP 12，呼氣流速未歸零。P<sub>peak</sub> 38、P<sub>plat</sub> 24。pH 7.22、PaCO₂ 78。',
+                  expect: 'vc_ac',
+                  inputs: { age: 68, sex: 'male', height: 165, weight: 55, cond: ['copd_exacerbation'], ind: ['hypercapnic_failure'], airway: 'ett', gcs: 3, rass: -5, sedation: 'deep', follows: false, drive: 'none', rrTotal: 12, rrSet: 12, spo2: 95, pao2: 82, fio2: 0.35, peep: 5, infiltrates: false, ph: 7.22, paco2: 78, hco3: 31, vt: 400, ppeak: 38, pplat: 24, totalPeep: 12, ti: 0.9, te: 4.1, flow: 80, flowBaseline: 'no', hr: 122, sbp: 78, dbp: 44, shock: true },
+                  steps: [
+                    ['先動手再想', '低血壓＋Auto-PEEP 7：短暫中斷呼吸器讓氣體排出，看血壓是否回升，同時排除張力性氣胸。'],
+                    ['Mode 不是重點', 'VC-A/C 好在 RR 與流速可控，也能直接量 Total PEEP 與 P<sub>plat</sub>。真正的治療是 RR 10–14、流速 60–100 L/min、I:E ≥ 1:3，再加支氣管擴張劑與類固醇。'],
+                    ['PaCO₂ 看誰', '平日 HCO₃⁻ 高代表慢性滯留，目標是 pH（允許 ≥ 7.20）與病人的基準值，不是 PaCO₂ 40。']
+                ] }
+              ],
+              trap: ['看到 PaCO₂ 78 就調高 RR：呼氣時間變短，Auto-PEEP 與 PaCO₂ 都會更高。', '把插管後低血壓全算給鎮靜藥，沒有做 disconnect 測試。'],
+              src: 'Rochwerg ERJ 2017（ERS/ATS NIV）；本頁阻塞性生理模組' },
+            { id: 3, title: '肥胖 ARDS 的平台壓', tag: 'VC-A/C・跨肺壓', who: '52 歲女性，160 cm、118 kg（BMI 46，PBW 52.4 kg）。流感肺炎併 ARDS，深度鎮靜。',
+              stages: [
+                { label: '接班時的設定', story: 'V<sub>T</sub> 500、RR 18、PEEP 10，FiO₂ 0.7、PaO₂ 77。P<sub>peak</sub> 42、P<sub>plat</sub> 36。pH 7.31、PaCO₂ 52。',
+                  expect: 'vc_ac',
+                  inputs: { age: 52, sex: 'female', height: 160, weight: 118, cond: ['ards', 'pneumonia'], ind: ['hypoxemic_failure'], spec: ['morbid_obesity'], airway: 'ett', gcs: 3, rass: -5, sedation: 'deep', follows: false, drive: 'none', rrTotal: 18, rrSet: 18, spo2: 91, pao2: 77, fio2: 0.7, peep: 10, infiltrates: true, suspectArds: true, ph: 7.31, paco2: 52, hco3: 26, vt: 500, ppeak: 42, pplat: 36, totalPeep: 10, ti: 1.0, te: 2.3, flow: 40, flowBaseline: 'yes', hr: 104, sbp: 124, dbp: 70 },
+                  steps: [
+                    ['第一個錯在體重', '500 mL 以實際體重算只有 4.2 mL/kg，看起來很保護；用 PBW 算是 9.5 mL/kg。肺不會因為體重增加而變大。'],
+                    ['先改 V<sub>T</sub>', '6 mL/kg PBW = 314 mL。RR 上調補通氣，目標 pH 7.30–7.45，RR 上限 35。'],
+                    ['Mode 選擇', '深度鎮靜、需要精準 V<sub>T</sub>：VC-A/C 最直接。換 PC 不會讓這個病人的肺比較安全。']
+                ] },
+                { label: 'V<sub>T</sub> 修正、放置食道氣球後', story: 'V<sub>T</sub> 320、RR 30、PEEP 16，FiO₂ 0.6、PaO₂ 84。P<sub>plat</sub> 仍 31。食道壓：吸氣末 21、呼氣末 18。pH 7.28、PaCO₂ 58。',
+                  expect: 'vc_ac',
+                  inputs: { age: 52, sex: 'female', height: 160, weight: 118, cond: ['ards', 'pneumonia'], ind: ['hypoxemic_failure'], spec: ['morbid_obesity'], airway: 'ett', gcs: 3, rass: -5, sedation: 'deep', follows: false, drive: 'none', rrTotal: 30, rrSet: 30, spo2: 93, pao2: 84, fio2: 0.6, peep: 16, infiltrates: true, suspectArds: true, ph: 7.28, paco2: 58, hco3: 26, vt: 320, ppeak: 35, pplat: 31, totalPeep: 16, ti: 0.7, te: 1.3, flow: 40, flowBaseline: 'yes', hr: 98, sbp: 118, dbp: 66 },
+                  steps: [
+                    ['P<sub>plat</sub> 31 是真的過高嗎', '吸氣末跨肺壓 = 31 − 21 = 10；呼氣末 = 16 − 18 = −2。肺泡端沒有過度膨脹，反而呼氣末可能塌陷。胸壁與腹壓吃掉了不少平台壓。'],
+                    ['跨肺驅動壓', 'ΔP 15 − 食道壓擺幅 3 = 12。呼吸系統 ΔP 15 高估了肺實際承受的壓力。'],
+                    ['證據要說清楚', 'Talmor 2008 的氧合與順應性較好，但較大型的 EPVent-2 在死亡與無呼吸器日的複合終點沒有差異（P = 0.92）。食道壓是協助解讀的工具，不是常規目標。'],
+                    ['下一步', 'P/F 140、FiO₂ 0.6，已符合 PROSEVA 的收案條件，應評估俯臥；翻身時注意腹部減壓與人力安排。']
+                ] }
+              ],
+              trap: ['用實際體重算 V<sub>T</sub>。', '沒有食道壓也沒看 ΔP，就把 V<sub>T</sub> 一路降到 4 mL/kg 以下追 P<sub>plat</sub>。', '反過來，以「胸壁厚」為由完全不管 P<sub>plat</sub>：沒有量測前都只是推測。'],
+              src: 'ARDSNet；Talmor NEJM 2008；Beitler JAMA 2019（EPVent-2）；Guérin NEJM 2013（PROSEVA）' },
+            { id: 4, title: '顱腦損傷遇上 ARDS', tag: 'VC-A/C・PaCO₂ 優先', who: '34 歲男性，178 cm、80 kg（PBW 73 kg）。重度 TBI 術後、顱內壓監測中，吸入性肺炎後進展為 ARDS。',
+              stages: [
+                { label: '沿用 ARDS 的允許性高碳酸', story: 'V<sub>T</sub> 440、RR 16、PEEP 8，FiO₂ 0.5、PaO₂ 72。P<sub>plat</sub> 22。pH 7.27、PaCO₂ 56，ICP 28 mmHg。',
+                  expect: 'vc_ac',
+                  inputs: { age: 34, sex: 'male', height: 178, weight: 80, cond: ['ards', 'pneumonia'], ind: ['hypoxemic_failure', 'airway_protection'], spec: ['tbi'], airway: 'ett', gcs: 6, rass: -4, sedation: 'deep', follows: false, drive: 'none', rrTotal: 16, rrSet: 16, spo2: 92, pao2: 72, fio2: 0.5, peep: 8, infiltrates: true, suspectArds: true, ph: 7.27, paco2: 56, hco3: 25, vt: 440, ppeak: 28, pplat: 22, totalPeep: 8, ti: 1.0, te: 2.75, flow: 40, flowBaseline: 'yes', hr: 92, sbp: 132, dbp: 74 },
+                  steps: [
+                    ['兩套目標打架', 'ARDS 平常容許高 PaCO₂，但高碳酸會使腦血管擴張、ICP 上升。這裡允許性高碳酸不適用。'],
+                    ['共識怎麼說', 'ESICM 2020：無明顯 ICP 上升時 PaCO₂ 35–45（強）。合併 ARDS 且無明顯 ICP 上升時使用肺保護通氣（強）；合併 ARDS 又有明顯 ICP 上升，共識「無法給出建議」。'],
+                    ['實際調法', '先提高 RR，V<sub>T</sub> 可從 6 往 8 mL/kg PBW 上調（上限內），每次都確認 P<sub>plat</sub>、ΔP 與 ICP。']
+                ] },
+                { label: '調整後', story: 'V<sub>T</sub> 480（6.5 mL/kg）、RR 26、PEEP 10，FiO₂ 0.5、PaO₂ 84。P<sub>plat</sub> 23。pH 7.37、PaCO₂ 42，ICP 18。',
+                  expect: 'vc_ac',
+                  inputs: { age: 34, sex: 'male', height: 178, weight: 80, cond: ['ards', 'pneumonia'], ind: ['hypoxemic_failure', 'airway_protection'], spec: ['tbi'], airway: 'ett', gcs: 6, rass: -4, sedation: 'deep', follows: false, drive: 'none', rrTotal: 26, rrSet: 26, spo2: 95, pao2: 84, fio2: 0.5, peep: 10, infiltrates: true, suspectArds: true, ph: 7.37, paco2: 42, hco3: 24, vt: 480, ppeak: 30, pplat: 23, totalPeep: 10, ti: 0.8, te: 1.5, flow: 40, flowBaseline: 'yes', hr: 88, sbp: 130, dbp: 72 },
+                  steps: [
+                    ['PEEP 不必因腦傷而不敢用', '共識：無明顯 ICP 上升，或 ICP 上升但對 PEEP 不敏感時，PEEP 與一般病人相同。工具的 PEEP 表僅供起點，上調後看 ICP、MAP。'],
+                    ['氧合目標也不同', 'PaO₂ 80–120 mmHg（ESICM 2020）。所以這裡的目標高於 ARDSNet 的 55–80，工具的 ARDS 氧合列不適用此病人。'],
+                    ['過度換氣的位置', '只有在明顯 ICP 上升時，才作為治療選項之一（弱建議），不是常規設定。']
+                ] }
+              ],
+              trap: ['把 ARDS 的 pH ≥ 7.20 直接套用到腦傷病人。', '為了 ICP 把 PaCO₂ 壓到 30 當常規。', '因為怕 ICP 就不敢上 PEEP，放著低氧不處理。'],
+              src: 'Robba ICM 2020（ESICM 腦損傷通氣共識，statements 10–19）' },
+            { id: 5, title: 'PSV 中的無效觸發', tag: 'PSV・過度支持', who: '76 歲男性，163 cm、58 kg（PBW 60 kg）。COPD，肺炎改善中，插管第 10 天。護理師回報：「看他胸部在動，呼吸器卻沒送氣」。',
+              stages: [
+                { label: '過度支持', story: 'PSV 20 / PEEP 5。呼吸器 RR 14，但病人實際用力約 28 次/分。V<sub>T</sub> 620，呼氣流速未歸零，Total PEEP 11。pH 7.46、PaCO₂ 44。',
+                  expect: 'vc_ac',
+                  inputs: { age: 76, sex: 'male', height: 163, weight: 58, cond: ['copd_exacerbation', 'pneumonia'], ind: ['hypercapnic_failure'], async: ['ineffective_triggering'], airway: 'ett', gcs: 15, rass: 0, sedation: 'light', follows: true, drive: 'adequate', rrTotal: 14, rrSet: 0, spo2: 95, pao2: 80, fio2: 0.35, peep: 5, infiltrates: false, ph: 7.46, paco2: 44, hco3: 31, vt: 620, ppeak: 25, pplat: 20, totalPeep: 11, ti: 1.2, te: 3.1, flow: 40, flowBaseline: 'no', hr: 92, sbp: 138, dbp: 72, currentMode: 'psv' },
+                  steps: [
+                    ['RR 14 是假象', '呼吸器數的是送出的次數，不是病人的用力次數。看流速波形呼氣相的凹陷，配合胸腹起伏才算得準。'],
+                    ['機制', 'V<sub>T</sub> 620 = 10.4 mL/kg，呼氣還沒完下一次用力就來了，Auto-PEEP 6 墊高觸發門檻，用力於是被吃掉。'],
+                    ['工具與床邊怎麼配合', '工具看到 Auto-PEEP ≥ 5 會首選 VC-A/C，並把 PSV 列為替代。這位病人清醒、血壓穩定，可先試降 PS；若 Auto-PEEP 仍高或出現窘迫，再回 VC-A/C。'],
+                    ['做法與證據', 'Thille 2008（12 位 > 10% 無效觸發的 PSV 病人）：PS 從約 20 降到約 13，V<sub>T</sub> 由 10.2 降到 5.9 mL/kg，無效觸發由 45% 降到約 0%。']
+                ] },
+                { label: 'PS 降到 12', story: 'PSV 12 / PEEP 5：V<sub>T</sub> 390，RR 24 與病人用力一致，Total PEEP 6，流速歸零。pH 7.44、PaCO₂ 46。',
+                  expect: 'psv',
+                  inputs: { age: 76, sex: 'male', height: 163, weight: 58, cond: ['copd_exacerbation', 'pneumonia'], ind: ['hypercapnic_failure'], airway: 'ett', gcs: 15, rass: 0, sedation: 'light', follows: true, drive: 'adequate', rrTotal: 24, rrSet: 0, spo2: 95, pao2: 80, fio2: 0.35, peep: 5, infiltrates: false, ph: 7.44, paco2: 46, hco3: 31, vt: 390, ppeak: 17, pplat: 15, totalPeep: 6, ti: 0.8, te: 1.7, flow: 40, flowBaseline: 'yes', hr: 88, sbp: 134, dbp: 70, currentMode: 'psv' },
+                  steps: [
+                    ['RR 變快是好事', 'RR 由 14 變 24 看似惡化，其實是原本被吃掉的用力現在都觸發了。V<sub>T</sub> 回到 6.5 mL/kg。'],
+                    ['進入 SBT', '符合篩檢條件，以 PS 5–8 + PEEP ≤ 5 進行 SBT。Subirà 2019：PS 30 分鐘相較 T-piece 2 小時，成功拔管 82.3% vs 74.0%。'],
+                    ['拔管後', '年齡 > 65 且有呼吸道疾病，屬高風險。HIGH-WEAN：HFNC 合併預防性 NIV 的第 7 天再插管率 11.8%，單用 HFNC 18.2%。']
+                ] }
+              ],
+              trap: ['看到 RR 14、V<sub>T</sub> 大就以為病人很舒服，準備拔管。', '為了「讓他休息」再把 PS 往上加，無效觸發更多。', 'Thille 2006：不同步指數高的病人呼吸器使用時間較長（25.5 vs 7.5 天），屬關聯不是因果。'],
+              src: 'Thille ICM 2006、ICM 2008；Subirà JAMA 2019；Thille JAMA 2019（HIGH-WEAN）；Ouellette/Schmidt 2017（ACCP/ATS）' },
+            { id: 6, title: '急性肺心症到 VV-ECMO', tag: 'VC-A/C → ECMO 的 PC-A/C', who: '44 歲女性，165 cm、65 kg（PBW 57 kg）。流感併重度 ARDS，深度鎮靜加肌鬆劑。',
+              stages: [
+                { label: '第 1 天：右心撐不住', story: 'V<sub>T</sub> 340、RR 30、PEEP 16，FiO₂ 0.8、PaO₂ 64。P<sub>plat</sub> 31。pH 7.21、PaCO₂ 62。使用昇壓藥，BP 92/56。心臟超音波：右心室擴大、中隔矛盾運動。',
+                  expect: 'vc_ac',
+                  inputs: { age: 44, sex: 'female', height: 165, weight: 65, cond: ['ards', 'pneumonia'], ind: ['hypoxemic_failure'], airway: 'ett', gcs: 3, rass: -5, sedation: 'deep', nmba: true, follows: false, drive: 'none', rrTotal: 30, rrSet: 30, spo2: 90, pao2: 64, fio2: 0.8, peep: 16, infiltrates: true, suspectArds: true, ph: 7.21, paco2: 62, hco3: 24, vt: 340, ppeak: 36, pplat: 31, totalPeep: 16, ti: 0.7, te: 1.3, flow: 40, flowBaseline: 'yes', hr: 118, sbp: 92, dbp: 56, vasopressor: true, shock: true, rvFailure: true },
+                  steps: [
+                    ['PEEP 表不能照抄', '工具依 FiO₂ 0.8 查 Higher PEEP 表會得到 20–22，但高 PEEP 與高平台壓會加重右心後負荷。每次調整都要看 ΔP、MAP 與心臟超音波。'],
+                    ['右心怕什麼', '高碳酸、低氧、高平台壓都會讓右心後負荷更重。所以允許性高碳酸在這裡要收斂，不是 pH ≥ 7.20 就沒事。'],
+                    ['最該先做的', '俯臥 ≥ 16 h/次：PROSEVA 28 天死亡率 16.0% vs 32.8%，ATS 2024 強烈建議重度 ARDS 俯臥 > 12 h/天。早期肌鬆劑屬條件式建議，ROSE 在中重度 ARDS 未顯示 90 天死亡率差異。']
+                ] },
+                { label: '第 2 天：俯臥兩次後仍惡化', story: 'FiO₂ 0.9、PaO₂ 63，已持續 8 小時。pH 7.19、PaCO₂ 68。P<sub>plat</sub> 32。',
+                  expect: 'vc_ac',
+                  inputs: { age: 44, sex: 'female', height: 165, weight: 65, cond: ['ards', 'pneumonia'], ind: ['hypoxemic_failure'], airway: 'ett', gcs: 3, rass: -5, sedation: 'deep', nmba: true, follows: false, drive: 'none', rrTotal: 32, rrSet: 32, spo2: 89, pao2: 63, fio2: 0.9, peep: 14, infiltrates: true, suspectArds: true, ph: 7.19, paco2: 68, hco3: 25, vt: 330, ppeak: 37, pplat: 32, totalPeep: 14, ti: 0.65, te: 1.2, flow: 40, flowBaseline: 'yes', hr: 124, sbp: 90, dbp: 54, vasopressor: true, shock: true, rvFailure: true },
+                  steps: [
+                    ['對照 EOLIA 收案條件', 'P/F 70 < 80 超過 6 小時；pH 7.19 < 7.25 且 PaCO₂ 68 ≥ 60 超過 6 小時。兩項都符合（另一項是 P/F < 50 超過 3 小時）。'],
+                    ['證據要說準', 'EOLIA 60 天死亡率 35% vs 46%，RR 0.76，P = 0.09，主要終點未達統計顯著；對照組 28% 交叉使用 ECMO。ATS 2024 合併分析後條件式建議用於選擇性重度 ARDS。'],
+                    ['聯絡 ECMO 中心', '別等到多重器官衰竭才打電話，轉送與插管路都需要時間。']
+                ] },
+                { label: 'VV-ECMO 上線後', story: 'PC-A/C：P<sub>insp</sub> 12、PEEP 12（P<sub>plat</sub> 24），V<sub>T</sub> 190、RR 12，FiO₂ 0.4。PaO₂ 78，pH 7.38、PaCO₂ 44。',
+                  expect: 'pc_ac',
+                  inputs: { age: 44, sex: 'female', height: 165, weight: 65, cond: ['ards', 'pneumonia'], ind: ['hypoxemic_failure'], spec: ['ecmo'], airway: 'ett', gcs: 3, rass: -5, sedation: 'deep', follows: false, drive: 'none', rrTotal: 12, rrSet: 12, spo2: 94, pao2: 78, fio2: 0.4, peep: 12, infiltrates: true, suspectArds: true, ph: 7.38, paco2: 44, hco3: 25, vt: 190, ppeak: 24, pplat: 24, totalPeep: 12, ti: 1.5, te: 3.5, flowBaseline: 'yes', hr: 96, sbp: 112, dbp: 62, vasopressor: true },
+                  steps: [
+                    ['Mode 為何換成 PC', '肺休息的目標是壓力上限（ELSO：P<sub>plat</sub> ≤ 25 或 P<sub>insp</sub> ≤ 15、PEEP ≥ 10），PC 可以直接設定。V<sub>T</sub> 只有 3.3 mL/kg 是預期中的結果。'],
+                    ['V<sub>T</sub> 變化怎麼解讀', '壓力固定下，V<sub>T</sub> 逐日上升代表順應性在恢復，是撤離 ECMO 的線索之一。'],
+                    ['P/F 195 不代表肺好了', '氧合主要來自體外循環，這時的 P/F 不能用來判斷 ARDS 嚴重度。']
+                ] }
+              ],
+              trap: ['只因 EOLIA P = 0.09 就說「ECMO 沒有用」，或反過來說「ECMO 救命已獲證實」。', '上了 ECMO 仍維持原本的呼吸器設定，錯過肺休息的目的。'],
+              src: 'Guérin NEJM 2013；Moss NEJM 2019（ROSE）；Combes NEJM 2018（EOLIA）；Qadir AJRCCM 2024（ATS）；Tonna ASAIO J 2021（ELSO）' }
+        ];
+        /*DEMO-END*/
+
+        /*QUIZ-START*/
+        // a = index into o as written (fixed order, A–D 5 each); calculations are asserted in tests.cjs.
+        const QUIZ = [
+            { l: 'basic', q: '男性，身高 175 cm，實際體重 95 kg，ARDS。V<sub>T</sub> 6 mL/kg 應設多少？', o: ['570 mL', '480 mL', '約 425 mL', '340 mL'], a: 2, x: 'PBW = 50 + 0.91 ×（175 − 152.4）= 70.6 kg，× 6 ≈ 423 mL。570 mL 是用實際體重算的錯誤答案。', src: 'ARDSNet' },
+            { l: 'basic', q: '插管病人突然痰栓、氣道阻力上升。VC-A/C 與 PC-A/C 各會看到什麼？', o: ['VC：P<sub>peak</sub> 上升、V<sub>T</sub> 不變；PC：壓力不變、V<sub>T</sub> 下降', 'VC：V<sub>T</sub> 下降；PC：P<sub>peak</sub> 上升', '兩者都是 V<sub>T</sub> 不變、壓力上升', '兩者都是壓力不變、V<sub>T</sub> 下降'], a: 0, x: 'VC 保證容積，代價落在壓力；PC 固定壓力，代價落在 V<sub>T</sub>。所以 PC 一定要設 V<sub>T</sub> 與分鐘通氣量警報。', src: '本頁 Mode 比較' },
+            { l: 'basic', q: 'V<sub>T</sub> 420 mL，P<sub>plat</sub> 28，Total PEEP 10。ΔP 與靜態順應性各是多少？', o: ['ΔP 28；C<sub>stat</sub> 15', 'ΔP 18；C<sub>stat</sub> 約 23 mL/cmH₂O', 'ΔP 10；C<sub>stat</sub> 42', 'ΔP 38；C<sub>stat</sub> 11'], a: 1, x: 'ΔP = P<sub>plat</sub> − Total PEEP = 18，C<sub>stat</sub> = V<sub>T</sub>/ΔP = 23.3。超過 14 就要檢討 V<sub>T</sub> 與 PEEP。', src: 'Amato NEJM 2015' },
+            { l: 'basic', q: 'VC-A/C 中警報響，P<sub>peak</sub> 46、P<sub>plat</sub> 18，SpO₂ 下降。第一步？', o: ['改 PC-A/C 讓警報停止', '降低 V<sub>T</sub> 到 4 mL/kg', '提高 PEEP', '檢查管路與咬管、抽痰、給支氣管擴張劑'], a: 3, x: 'P<sub>peak</sub> − P<sub>plat</sub> = 28，是阻力問題，肺泡壓不高。改 Mode 只會把痰栓藏起來。', src: '本頁教學案例 9' },
+            { l: 'basic', q: 'P<sub>peak</sub> 45、P<sub>plat</sub> 38，且剛發生突然低血氧。最應優先排除？', o: ['氣胸、右主支氣管插管、肺水腫惡化', '咬管', '痰栓', '呼吸器管路積水'], a: 0, x: '兩個壓力一起上升、差距不大，表示順應性變差。其他選項主要造成阻力上升，P<sub>plat</sub> 不會明顯升高。', src: '本頁警訊邏輯' },
+            { l: 'basic', q: '哪一位「不適合」先試 NIV？', o: ['COPD 惡化，pH 7.28、PaCO₂ 65，清醒', '心因性肺水腫，SBP 160，可配合', 'GCS 7、持續嘔吐、上消化道出血', 'COPD 拔管後高風險，預防性使用'], a: 2, x: '意識不清加高吸入風險是 NIV 禁忌，應插管。其餘三者都有 ERS/ATS 2017 或 ACCP/ATS 2017 的支持。', src: 'Rochwerg 2017；Ouellette 2017' },
+            { l: 'basic', q: '病人 RASS −5、無自發呼吸。哪個模式不可用？', o: ['VC-A/C', 'PSV', 'PC-A/C', 'PRVC'], a: 1, x: 'PSV 每口都要病人觸發，沒有後備速率（僅有 apnea backup）。', src: '本頁 Mode 比較' },
+            { l: 'basic', q: '關於脫離呼吸器，哪個做法最不建議？', o: ['每日篩檢，符合就做 SBT', 'SBT 使用 PS 5–8 cmH₂O', '高風險病人拔管後接 NIV', '以 SIMV 逐步降速率慢慢脫離'], a: 3, x: 'Esteban 1995：每日一次 SBT 的成功率約為 SIMV 的 2.83 倍。Brochard 1994 的失敗率也是 SIMV 42%、PSV 23%。', src: 'Esteban NEJM 1995；Brochard AJRCCM 1994' },
+            { l: 'basic', q: 'HFNC 第 6 小時，SpO₂ 90%、FiO₂ 0.8、RR 36。ROX 與解讀？', o: ['5.2，風險低', '3.1，低於 6 小時切點 3.47，失敗風險高', '3.1，高於 2.85，可放心', '2.5，低於 4.88，須立即插管'], a: 1, x: '(90/0.8)/36 = 3.13。切點因時間而異：2 h < 2.85、6 h < 3.47、12 h < 3.85；≥ 4.88 屬低風險。', src: 'Roca AJRCCM 2019' },
+            { l: 'basic', q: 'Set PEEP 5，呼氣末暫停測得 Total PEEP 15，呼氣流速未歸零。Auto-PEEP 與第一步？', o: ['10；降低 RR、延長呼氣時間', '15；提高 Set PEEP 到 15', '10；提高 RR 以降 PaCO₂', '5；無須處理'], a: 0, x: 'Auto-PEEP = Total − Set = 10。提高 RR 會讓呼氣時間更短。', src: '本頁阻塞性生理模組' },
+
+            { l: 'adv', q: 'PSV 病人 P<sub>peak</sub> 20、PEEP 8，呼氣末閉塞壓 ΔP<sub>occ</sub> = −15 cmH₂O。依 Bertoni 公式，P<sub>mus</sub> 與 ΔP<sub>L,dyn</sub> 為何？', o: ['P<sub>mus</sub> 15；ΔP<sub>L,dyn</sub> 12', 'P<sub>mus</sub> 10；ΔP<sub>L,dyn</sub> 2', 'P<sub>mus</sub> 約 11；ΔP<sub>L,dyn</sub> 22，兩者都偏高', 'P<sub>mus</sub> 約 11；ΔP<sub>L,dyn</sub> 2，肺沒有負擔'], a: 2, x: 'P<sub>mus</sub> = −¾ × ΔP<sub>occ</sub> = 11.25（> 10）。ΔP<sub>L,dyn</sub> = (P<sub>peak</sub> − PEEP) − ⅔ × ΔP<sub>occ</sub> = 12 + 10 = 22（> 15）。ΔP<sub>occ</sub> 是負值，所以是相加。呼吸器上看起來的壓力只有 12。', src: 'Bertoni Crit Care 2019' },
+            { l: 'adv', q: '清醒的 ARDS 病人在 PSV 下 P0.1 = 4.0 cmH₂O。最合理的解讀？', o: ['呼吸驅動太弱，應加深鎮靜', '數值正常，可直接做 SBT', '代表肺順應性變好', '可能有過高的吸氣用力，應找驅動來源並重新評估支持'], a: 3, x: 'Telias 2020：P0.1 > 3.5 偵測高用力的敏感度 80%、特異度 77%；≤ 1.0 偵測低用力的敏感度 100%、特異度 92%。部分呼吸器未實際閉塞即估算，可能低估。', src: 'Telias AJRCCM 2020' },
+            { l: 'adv', q: 'ARDS 病人由 VC-A/C 改 PC-A/C。P<sub>peak</sub> 由 38 降至 28，V<sub>T</sub> 與 P<sub>plat</sub> 都沒變。這代表？', o: ['P<sub>peak</sub> 下降主要是流速型態改變，肺泡端壓力未變，肺保護程度並未改善', '肺泡壓下降 10，肺保護改善', '順應性改善了 36%', '氣道阻力真的下降，可停用支氣管擴張劑'], a: 0, x: 'P<sub>peak</sub> 含克服阻力的壓力，受流速型態影響；P<sub>plat</sub> 才接近肺泡端。真正的肺保護看 V<sub>T</sub>、P<sub>plat</sub>、ΔP。', src: '呼吸力學原理' },
+            { l: 'adv', q: '重度肥胖 ARDS：P<sub>plat</sub> 32、PEEP 12。食道壓吸氣末 22、呼氣末 18。正確解讀？', o: ['吸氣末跨肺壓 32，過度膨脹，應立刻降 V<sub>T</sub>', '吸氣末跨肺壓 10、呼氣末 −6，提示呼氣末塌陷；但食道壓導引並未證實改善預後', '呼氣末跨肺壓 +6，PEEP 過高', 'EPVent-2 證實食道壓導引可降低死亡率，應常規使用'], a: 1, x: '32 − 22 = 10；12 − 18 = −6。EPVent-2 主要複合終點無差異（P = 0.92），28 天死亡 32.4% vs 30.6%。', src: 'Talmor 2008；Beitler JAMA 2019' },
+            { l: 'adv', q: '深度鎮靜、未打肌鬆劑的 ARDS 病人在 VC-A/C。波形見機器送氣開始後，才接著出現固定比例的吸氣用力，偶有疊加呼吸。最可能是？', o: ['Auto-triggering，應提高觸發門檻', 'Ineffective triggering，應降 PS', 'Flow starvation，應提高流速', 'Reverse triggering，評估減輕鎮靜或調整 RR/Ti'], a: 3, x: '用力跟在機器送氣之後（常為 1:1、1:2 比例），是 Akoumianaki 2013 描述的 entrainment。確診需食道壓或 EAdi；一般波形只能算疑似。', src: 'Akoumianaki Chest 2013；Jackson Ann Intensive Care 2024' },
+            { l: 'adv', q: 'PSV 20、V<sub>T</sub> 10 mL/kg PBW，病人用力多次未觸發，血流動力穩定。依生理研究，最直接有效的調整？', o: ['提高 PS 至 24', '改 SIMV', '降低 PS（約 13），讓 V<sub>T</sub> 回到約 6 mL/kg', '加深鎮靜'], a: 2, x: 'Thille 2008：PS 由 20 降到 13，V<sub>T</sub> 由 10.2 降到 5.9 mL/kg，無效觸發由 45% 降到約 0%。樣本僅 12 人，屬生理研究。', src: 'Thille ICM 2008' },
+            { l: 'adv', q: '男性 175 cm，重度 DKA（pH 7.05、HCO₃⁻ 5）。插管前估計 V<sub>E</sub> 約 18 L/min，插管後 V<sub>T</sub> 設 8 mL/kg PBW。RR 應設約多少才接得上？', o: ['14', '20', '32', '45'], a: 2, x: 'PBW 70.6 kg，V<sub>T</sub> ≈ 565 mL，18000/565 ≈ 32。Winter 預期 PaCO₂ 13.5–17.5。RR 14 會讓 PaCO₂ 回升、pH 驟降。', src: '本頁教學案例 6' },
+            { l: 'adv', q: '重度氣喘：V<sub>T</sub> 450 mL、RR 20、方波流速 60 L/min、無吸氣暫停。把流速提到 100 L/min 與把 RR 降到 14，各增加多少呼氣時間？', o: ['流速 +1.29 s；RR +0.18 s', '兩者都約 +0.5 s', '流速 +0.45 s；RR +0.45 s', '流速 +0.18 s；RR +1.29 s'], a: 3, x: '流速 1 L/s：Ti 0.45、Te 2.55；100 L/min：Ti 0.27、Te 2.73（+0.18）。RR 14：週期 4.29 s，Te 3.84（+1.29）。降 RR 的效果遠大於提高流速。', src: '計算自呼吸週期' },
+            { l: 'adv', q: '重度 ARDS，俯臥後 P/F 70 已 8 小時。關於 VV-ECMO，哪個敘述正確？', o: ['EOLIA 主要終點顯著降低 60 天死亡率', '符合 EOLIA 條件（P/F < 80 超過 6 h）；主要終點 35% vs 46%、P = 0.09，ATS 2024 為條件式建議', '須 P/F < 50 才可考慮', 'ATS 2024 強烈建議所有重度 ARDS 使用'], a: 1, x: 'EOLIA 收案條件任一：P/F < 50 超過 3 h、P/F < 80 超過 6 h、pH < 7.25 且 PaCO₂ ≥ 60 超過 6 h。對照組 28% 交叉使用 ECMO。', src: 'Combes NEJM 2018；Qadir AJRCCM 2024' },
+            { l: 'adv', q: '重度 TBI 合併 ARDS，無明顯 ICP 上升，PaCO₂ 56、pH 7.27。最符合 ESICM 2020 共識的處置？', o: ['維持肺保護通氣，調高 RR 把 PaCO₂ 帶回 35–45', '允許性高碳酸，pH ≥ 7.20 即可', '過度換氣到 PaCO₂ 25–30', '因腦傷不使用肺保護通氣'], a: 0, x: '無明顯 ICP 上升時，PaCO₂ 35–45（強）且合併 ARDS 用肺保護通氣（強）。若 ICP 明顯上升又合併 ARDS，共識無法給出肺保護通氣的建議。', src: 'Robba ICM 2020' }
+        ];
+        /*QUIZ-END*/
+
+        /*MAP-START*/
+        // Leaves restate rules in VN and the demo cases; update by hand when those change.
+        const VMAP = {
+            dx: [
+                { t: '支持層級', s: '還需要插管嗎', l: ['清醒、能保護氣道、血流動力穩定才談 NIV／HFNC', 'NIV 禁忌：GCS ≤ 8、無法清痰、休克、高吸入風險、顏面創傷', 'COPD 高碳酸 pH < 7.35 → Bilevel NIV', '低氧無高碳酸 → HFNC；ROX 2/6/12 h 失敗切點 2.85／3.47／3.85'] },
+                { t: '氧合', s: 'P/F、S/F、ARDS 分級', l: ['P/F = PaO₂ ÷ FiO₂；SpO₂ ≤ 97% 時可用 S/F', '插管 ARDS：輕 201–300、中 101–200、重 ≤ 100', '2024 全球定義納入 HFNC ≥ 30 L/min 的未插管病人', 'P/F < 150、FiO₂ ≥ 0.6 → 俯臥'] },
+                { t: '通氣與酸鹼', s: 'PaCO₂ 是在代償還是在衰竭', l: ['Winter：預期 PaCO₂ = 1.5 × HCO₃⁻ + 8 ± 2', '代謝性酸中毒插管後要接得上原本的 V<sub>E</sub>', 'COPD 看病人基準值，不追 PaCO₂ 40', '允許性高碳酸 pH ≥ 7.20；顱壓高、右心衰竭例外'] },
+                { t: '肺力學', s: '阻力還是順應性', l: ['P<sub>peak</sub> − P<sub>plat</sub> > 10 → 阻力（痰栓、咬管、痙攣）', 'P<sub>plat</sub> 也升高 → 順應性（氣胸、水腫、主支插管）', 'ΔP = P<sub>plat</sub> − Total PEEP，目標 ≤ 14', 'Auto-PEEP = Total − Set PEEP；流速要歸零'] },
+                { t: '驅動與同步', s: '病人和機器有沒有對上', l: ['P0.1 > 3.5 提示高用力；≤ 1.0 提示低用力', 'P<sub>mus</sub> = −¾ ΔP<sub>occ</sub>；ΔP<sub>L,dyn</sub> = ΔP<sub>aw</sub> − ⅔ ΔP<sub>occ</sub>', '無效觸發：常見於 PS 過高、Auto-PEEP', 'Double：V<sub>T</sub> 疊加，Ti 太短或需求高', 'Reverse：深鎮靜中，用力跟在送氣之後'] },
+                { t: '會改變目標的情境', s: '循環、腦、體型', l: ['休克／右心衰竭：限制 PEEP、P<sub>plat</sub>，避免高碳酸與低氧', 'TBI：PaCO₂ 35–45、PaO₂ 80–120', '肥胖：V<sub>T</sub> 用 PBW；P<sub>plat</sub> 含胸壁成分', '神經肌肉疾病：驅動弱，不用 PSV 硬撐'] }
+            ],
+            tx: [
+                { t: 'VC-A/C', s: '要精準 V<sub>T</sub> 時', l: ['無驅動、深鎮靜、肌鬆劑', 'ARDS、代謝性酸中毒、阻塞性的預設選擇', '可直接量 P<sub>plat</sub> 與 Total PEEP', '風險：Flow starvation、Double triggering'] },
+                { t: 'PC-A/C', s: '要限壓或可變流速時', l: ['高驅動、Flow starvation 時改善同步', 'VV-ECMO 肺休息：P<sub>plat</sub> ≤ 25、PEEP ≥ 10', '風險：阻力或順應性變化時 V<sub>T</sub> 跟著變，要設警報', '高驅動下 V<sub>T</sub> 可能遠超預期'] },
+                { t: 'PRVC／雙重控制', s: '有驅動、尚未能脫離', l: ['兼顧 V<sub>T</sub> 目標與壓力波形', '強烈吸氣時演算法會調低支持', '漏氣時 V<sub>T</sub> 估算失準'] },
+                { t: 'PSV 與 SBT', s: '驅動穩定才用', l: ['無後備速率', 'SBT：PS 5–8 + PEEP ≤ 5，30–120 分鐘', 'V<sub>T</sub> 過大、無效觸發 → 先降 PS', '高風險拔管後：NIV 預防；HFNC + NIV 優於單用 HFNC'] },
+                { t: '多半不選', s: 'SIMV、APRV', l: ['SIMV：脫離最慢（Esteban 1995、Brochard 1994）', 'APRV：單中心 RCT 有利（Zhou 2017），工具列為非第一線', '阻塞性生理避免 APRV 短釋放時間'] },
+                { t: '調設定，不是調 Mode', s: '多數問題的真正解法', l: ['ARDS：V<sub>T</sub> 4–8 mL/kg PBW、P<sub>plat</sub> ≤ 30', '阻塞性：RR ↓ 優先，再提高流速', '酸中毒：RR ↑、V<sub>T</sub> 可到 8', '低血壓＋Auto-PEEP：先 disconnect'] },
+                { t: '救援處置', s: '重度 ARDS 的順序', l: ['俯臥 > 12 h/天（ATS 2024 強烈）', '較高 PEEP，不做長時間肺復張（ART 28 天死亡率較高）', '早期肌鬆劑（條件式；ROSE 無死亡率差異）', 'VV-ECMO（條件式）：P/F < 50、< 80，或 pH < 7.25 合併 PaCO₂ ≥ 60'] }
+            ]
+        };
+        /*MAP-END*/
+
         const MODE_INFO = {
             vc_ac: { name: 'Volume Control (VC-A/C)', var: '容積 (V<sub>T</sub>) 與流速', pred: '高（保證 V<sub>T</sub>）', reqSpon: '否', backup: '有（Set RR）', trigger: '時間 / 病人（壓力或流速）', cycle: '容積（流速×時間）', sync: '固定流速，高驅動時 Flow starvation', best: 'ARDS 精確 V<sub>T</sub>、阻塞性疾病控制 Te、需保證 V<sub>E</sub>', avoid: '高驅動未處理時', patient: '呼吸速率（可觸發額外呼吸）' },
             pc_ac: { name: 'Pressure Control (PC-A/C)', var: '吸氣壓力 (P<sub>insp</sub>) 與 Ti', pred: '可變（取決於順應性與阻力）', reqSpon: '否', backup: '有（Set RR）', trigger: '時間 / 病人', cycle: '時間', sync: '減速流速，可隨病人用力增加', best: '高驅動／不同步、需限制吸氣壓', avoid: '順應性快速變化而未監測 V<sub>T</sub>', patient: '送出之 V<sub>T</sub> 與呼吸速率' },
@@ -1886,7 +2219,12 @@
             calculateDerivedMetrics();
             renderModeComparisonTable();
             renderLearningCasesTabs();
-            navigateTo('home', true);
+            renderDemoTabs();
+            renderQuiz();
+            renderMap();
+            const startHash = location.hash.slice(1);
+            navigateTo(HASH_PAGES.includes(startHash) ? startHash : 'home', true);
+            window.addEventListener('hashchange', () => { const t = location.hash.slice(1); if (HASH_PAGES.includes(t)) navigateTo(t, true); });
         });
 
         function onFormInput(e) {
@@ -1903,14 +2241,18 @@
             clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.add('hidden'), 2800);
         }
 
+        const HASH_PAGES = ['cases', 'quiz', 'map'];
         function navigateTo(pageId, noScroll) {
             appState.currentPage = pageId;
-            ['home', 'assessment', 'compare', 'learning', 'results'].forEach(p => $(`page-${p}`).classList.toggle('hidden', p !== pageId));
+            ['home', 'assessment', 'compare', 'learning', 'results', 'cases', 'quiz', 'map'].forEach(p => $(`page-${p}`).classList.toggle('hidden', p !== pageId));
             document.querySelectorAll('.nav-btn').forEach(b => {
                 const on = b.dataset.nav === pageId;
                 b.classList.toggle('text-amber-800', on); b.classList.toggle('font-bold', on); b.classList.toggle('bg-amber-50', on);
+                if (on && b.offsetParent) b.closest('nav').scrollLeft = b.offsetLeft - 16; // keep the active tab visible on phones
             });
             if (pageId === 'assessment' && appState.userMode === 'expert') syncExpertFromForm();
+            history.replaceState(null, '', HASH_PAGES.includes(pageId) ? '#' + pageId : location.pathname + location.search);
+            if (pageId === 'map') drawMap();
             if (!noScroll) window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
@@ -2163,6 +2505,115 @@
             goWizardStep(1);
             runClinicalDecisionEngine();
             toast(`已載入 ${c.title} 並完成分析，可按「返回修改數據」調整。`);
+        }
+
+        /* ---------- 示範病例 ---------- */
+        const TILE_TONE = { danger: 'border-red-300 bg-red-50 text-red-900', warn: 'border-amber-300 bg-amber-50 text-amber-900', ok: 'border-emerald-200 bg-emerald-50 text-emerald-900' };
+        function demoTiles(s, r) {
+            const tiles = r.dashboard.filter(c => c.level !== 'na').map(c => [c.label, c.value, c.note, c.level]);
+            if (r.derived.pbw) tiles.unshift(['PBW', r.derived.pbw.toFixed(1) + ' kg', '6 mL/kg = ' + Math.round(r.derived.pbw * 6) + ' mL', 'ok']);
+            if (s.rox) {
+                const v = rox(s.rox[0], s.rox[1], s.rox[2]), cut = { '2 h': 2.85, '6 h': 3.47, '12 h': 3.85 }[s.rox[3]];
+                tiles.unshift([`ROX（${s.rox[3]}）`, v.toFixed(2), v >= 4.88 ? '≥ 4.88 風險較低' : v < cut ? `< ${cut} 失敗風險高` : '灰色地帶，再追蹤', v >= 4.88 ? 'ok' : v < cut ? 'danger' : 'warn']);
+            }
+            return tiles.map(t => `<div class="rounded-xl border p-2.5 ${TILE_TONE[t[3]] || TILE_TONE.ok}"><div class="text-[11px] font-semibold opacity-80">${t[0]}</div><div class="font-bold text-sm">${t[1]}</div><div class="text-[11px] opacity-80">${t[2]}</div></div>`).join('');
+        }
+        function renderDemoTabs() {
+            $('demo-tabs').innerHTML = DEMO_CASES.map(c => `<button id="demo-tab-${c.id}" onclick="selectDemoCase(${c.id})" class="demo-tab px-3 py-1.5 rounded-lg border border-gray-200 hover:border-amber-500 hover:bg-amber-50">${c.id}. ${c.title}</button>`).join('');
+            selectDemoCase(1);
+        }
+        function selectDemoCase(id) {
+            const c = DEMO_CASES.find(x => x.id === id);
+            document.querySelectorAll('.demo-tab').forEach(b => { const on = b.id === `demo-tab-${id}`; b.classList.toggle('bg-amber-100', on); b.classList.toggle('border-amber-500', on); });
+            $('demo-detail').innerHTML = `
+                <div>
+                    <span class="px-2.5 py-1 rounded bg-amber-200 text-amber-900 font-bold text-xs">${c.tag}</span>
+                    <h3 class="text-xl font-bold text-gray-900 mt-2">病例 ${c.id}：${c.title}</h3>
+                    <p class="text-sm text-gray-700 mt-1 leading-relaxed">${c.who}</p>
+                </div>
+                ${c.stages.map((s, i) => {
+                    const r = VN.analyze(s.inputs);
+                    const danger = r.alerts.filter(a => a.level === 'danger');
+                    return `<div class="bg-white p-4 sm:p-5 rounded-xl border border-gray-200 space-y-3">
+                        <h4 class="font-bold text-gray-900">階段 ${i + 1}｜${s.label}</h4>
+                        <p class="text-sm text-gray-700 leading-relaxed">${s.story}</p>
+                        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">${demoTiles(s, r)}</div>
+                        <div class="rounded-xl bg-amber-50 border border-amber-200 p-3 text-sm">
+                            <span class="text-xs font-semibold text-amber-800">本工具引擎的結果</span>
+                            <div class="font-bold text-amber-900">${r.label[1]}<span class="font-normal text-xs">　${r.label[0]}</span></div>
+                            ${danger.length ? `<div class="mt-1 text-xs text-red-800"><i class="fa-solid fa-triangle-exclamation"></i> ${danger.map(a => a.title).join('；')}</div>` : ''}
+                        </div>
+                        <ol class="space-y-2 text-sm">${s.steps.map((st, k) => `<li class="flex gap-2"><span class="shrink-0 w-5 h-5 rounded-full bg-amber-600 text-white text-[11px] font-bold flex items-center justify-center mt-0.5">${k + 1}</span><span class="leading-relaxed"><strong class="text-gray-900">${st[0]}：</strong><span class="text-gray-700">${st[1]}</span></span></li>`).join('')}</ol>
+                        <button onclick="loadDemoStage(${c.id},${i})" class="px-3 py-1.5 border border-amber-300 bg-amber-50 text-amber-800 rounded-lg text-xs font-bold hover:bg-amber-100"><i class="fa-solid fa-microchip"></i> 載入此階段到評估工具</button>
+                    </div>`;
+                }).join('')}
+                <div class="p-4 rounded-xl bg-red-50 border border-red-200 text-sm">
+                    <h4 class="font-bold text-red-900 mb-1">常見陷阱</h4>
+                    <ul class="list-disc pl-5 space-y-1 text-red-900">${c.trap.map(t => `<li>${t}</li>`).join('')}</ul>
+                </div>
+                <p class="text-xs text-gray-500">依據：${c.src}</p>`;
+        }
+        function loadDemoStage(id, i) {
+            const c = DEMO_CASES.find(x => x.id === id);
+            applyInputs(c.stages[i].inputs);
+            toggleNivSection();
+            syncExpertFromForm();
+            goWizardStep(1);
+            runClinicalDecisionEngine();
+            toast(`已載入病例 ${id} 階段 ${i + 1} 並完成分析，可按「返回修改數據」調整。`);
+        }
+
+        /* ---------- 考題 ---------- */
+        const QZ = { set: 'all', a: {} };
+        function setQuizSet(v) { QZ.set = v; renderQuiz(); }
+        function resetQuiz() { QZ.a = {}; renderQuiz(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+        function answerQuiz(q, k) {
+            QZ.a[q] = k; renderQuiz();
+            const box = $(`qz-x-${q}`); if (box) box.scrollIntoView({ block: 'nearest' });
+        }
+        function renderQuiz() {
+            const all = QUIZ.map((q, i) => ({ ...q, i }));
+            const it = all.filter(q => QZ.set === 'all' || q.l === QZ.set);
+            const done = it.filter(q => QZ.a[q.i] != null);
+            const by = l => { const s = all.filter(q => q.l === l && QZ.a[q.i] != null); return `${s.filter(q => QZ.a[q.i] === q.a).length}／${s.length}`; };
+            document.querySelectorAll('.qz-set').forEach(b => { const on = b.dataset.set === QZ.set; b.classList.toggle('bg-amber-100', on); b.classList.toggle('border-amber-500', on); b.setAttribute('aria-pressed', on); });
+            $('qz-score').innerHTML = `已答 <strong>${done.length}／${it.length}</strong>，答對 <strong>${done.filter(q => QZ.a[q.i] === q.a).length}</strong><span class="text-xs text-gray-500">　基礎 ${by('basic')}・高階 ${by('adv')}</span>`;
+            $('qz-list').innerHTML = it.map(q => {
+                const ans = QZ.a[q.i], answered = ans != null;
+                return `<div class="bg-white p-4 sm:p-5 rounded-xl border border-gray-200 space-y-3">
+                    <div class="flex items-center gap-2 text-xs font-bold"><span class="text-gray-500">第 ${q.i + 1} 題</span><span class="px-2 py-0.5 rounded ${q.l === 'adv' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-700'}">${q.l === 'adv' ? '高階' : '基礎'}</span></div>
+                    <p class="text-sm font-semibold text-gray-900 leading-relaxed">${q.q}</p>
+                    <div class="grid gap-2">${q.o.map((o, k) => {
+                        const tone = !answered ? 'border-gray-200 hover:border-amber-500 hover:bg-amber-50' : k === q.a ? 'border-emerald-500 bg-emerald-50 text-emerald-900 font-semibold' : k === ans ? 'border-red-400 bg-red-50 text-red-900' : 'border-gray-200 text-gray-500';
+                        return `<button ${answered ? 'disabled' : ''} onclick="answerQuiz(${q.i},${k})" class="qz-opt w-full text-left text-sm px-3 py-2 rounded-lg border ${tone}">${String.fromCharCode(65 + k)}. ${o}</button>`;
+                    }).join('')}</div>
+                    ${answered ? `<div id="qz-x-${q.i}" class="p-3 rounded-lg text-sm leading-relaxed ${ans === q.a ? 'bg-emerald-50 text-emerald-900' : 'bg-amber-50 text-amber-900'}"><strong>${ans === q.a ? '正確' : '答案：' + String.fromCharCode(65 + q.a)}</strong>　${q.x}<div class="text-xs opacity-75 mt-1">依據：${q.src}</div></div>` : ''}
+                </div>`;
+            }).join('');
+        }
+
+        /* ---------- 心智圖 ---------- */
+        function mapBranch(b, side, i) {
+            return `<div class="mm-branch ${side}"><button type="button" class="mm-head" aria-expanded="false" aria-controls="mm-${side}${i}"><span class="mm-t">${i + 1}. ${b.t}</span><span class="mm-s">${b.s}</span></button><ul class="mm-leaves" id="mm-${side}${i}" hidden>${b.l.map(x => `<li>${x}</li>`).join('')}</ul></div>`;
+        }
+        function renderMap() {
+            $('mm-dx').innerHTML = '<h3 class="mm-col dx">評估與判讀</h3>' + VMAP.dx.map((b, i) => mapBranch(b, 'dx', i)).join('');
+            $('mm-tx').innerHTML = '<h3 class="mm-col tx">模式與處置</h3>' + VMAP.tx.map((b, i) => mapBranch(b, 'tx', i)).join('');
+            $('mm').addEventListener('click', e => { const h = e.target.closest('.mm-head'); if (h) { mmSet(h, h.getAttribute('aria-expanded') !== 'true'); drawMap(); } });
+            if (window.ResizeObserver) new ResizeObserver(drawMap).observe($('mm')); else window.addEventListener('resize', drawMap);
+        }
+        function mmSet(h, open) { h.setAttribute('aria-expanded', open); $(h.getAttribute('aria-controls')).hidden = !open; }
+        function mmAll(open) { document.querySelectorAll('#mm .mm-head').forEach(h => mmSet(h, open)); drawMap(); }
+        function drawMap() {
+            const w = $('mm'), svg = $('mm-links');
+            if (w.offsetParent === null || getComputedStyle(svg).display === 'none') return;
+            const W = w.getBoundingClientRect(), C = $('mm-center').getBoundingClientRect();
+            svg.setAttribute('viewBox', `0 0 ${W.width} ${W.height}`);
+            svg.innerHTML = [...document.querySelectorAll('#mm .mm-branch')].map(b => {
+                const dx = b.classList.contains('dx'), r = b.querySelector('.mm-head').getBoundingClientRect();
+                const x1 = (dx ? C.left : C.right) - W.left, y1 = C.top + C.height / 2 - W.top, x2 = (dx ? r.right : r.left) - W.left, y2 = r.top + r.height / 2 - W.top, mx = (x1 + x2) / 2;
+                return `<path class="${dx ? 'dx' : 'tx'}" d="M${x1} ${y1} C${mx} ${y1} ${mx} ${y2} ${x2} ${y2}"/>`;
+            }).join('');
         }
 
         function openExplainModeModal(key) {

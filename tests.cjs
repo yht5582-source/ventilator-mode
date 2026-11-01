@@ -5,8 +5,8 @@ const html = fs.readFileSync(__dirname + '/index.html', 'utf8');
 const block = (a, b) => html.slice(html.indexOf(a), html.indexOf(b) + b.length);
 const ctx = {};
 vm.createContext(ctx);
-vm.runInContext(block('/*ENGINE-START*/', '/*ENGINE-END*/') + block('/*CASES-START*/', '/*CASES-END*/') + ';this.VN=VN;this.casesList=casesList;', ctx);
-const { VN, casesList } = ctx;
+vm.runInContext(block('/*ENGINE-START*/', '/*ENGINE-END*/') + block('/*CASES-START*/', '/*CASES-END*/') + block('/*DEMO-START*/', '/*DEMO-END*/') + block('/*QUIZ-START*/', '/*QUIZ-END*/') + block('/*MAP-START*/', '/*MAP-END*/') + ';this.VN=VN;this.casesList=casesList;this.DEMO_CASES=DEMO_CASES;this.QUIZ=QUIZ;this.VMAP=VMAP;this.rox=rox;', ctx);
+const { VN, casesList, DEMO_CASES, QUIZ, VMAP, rox } = ctx;
 
 let pass = 0, fail = 0;
 function ok(cond, name) { if (cond) pass++; else { fail++; console.log('FAIL', name); } }
@@ -150,6 +150,53 @@ casesList.forEach(c => {
 const c6 = VN.analyze(P(casesList[5].inputs)); ok(c6.alerts.some(a => a.title.includes('代謝性酸中毒')), 'Case 6 acidosis alert');
 const c9 = VN.analyze(P(casesList[8].inputs)); ok(c9.alerts.some(a => a.title.includes('氣道阻力')), 'Case 9 resistance alert');
 const c4 = VN.analyze(P(casesList[3].inputs)); ok(c4.modules.some(m => m.title.includes('SBT')), 'Case 4 SBT module');
+
+// Demo cases: every stage goes through the engine
+ok(DEMO_CASES.length === 6, '6 demo cases');
+DEMO_CASES.forEach(c => {
+    ok(c.stages.length >= 2 && c.trap.length && c.src, `${c.title}: has stages, traps, sources`);
+    c.stages.forEach((s, i) => {
+        const res = VN.analyze(s.inputs);
+        ok(res.mode.key === s.expect, `${c.title} stage ${i + 1}: engine ${res.mode.key} = ${s.expect}`);
+        ok(VN.abg(s.inputs.ph, s.inputs.paco2, s.inputs.hco3).consistent, `${c.title} stage ${i + 1}: ABG consistent`);
+        ok(s.steps.length >= 3, `${c.title} stage ${i + 1}: has steps`);
+    });
+});
+const dS = (c, s) => VN.analyze(DEMO_CASES[c - 1].stages[s - 1].inputs);
+// Numbers quoted in the case text
+ok(near(rox(93, 0.6, 30), 5.17, 0.01) && near(rox(90, 0.8, 36), 3.13, 0.01), 'ROX 5.17 and 3.13');
+ok(near(dS(1, 1).derived.pbw, 64.2, 0.05) && Math.round(dS(1, 1).derived.pbw * 6) === 385, 'Case 1 PBW 64, 6 mL/kg = 385');
+{ const w = VN.abg(7.30, 38, 18); ok(w.winter[0] === 33 && w.winter[1] === 37 && w.primary === 'mixed_acidosis', "Case 1 Winter's 33–37, PaCO2 38 above it"); }
+ok(dS(2, 3).derived.autoPeep === 7 && dS(2, 3).alerts.some(a => a.title.includes('動態過度充氣') && a.level === 'danger'), 'Case 2 Auto-PEEP 7 + hypotension → danger');
+ok(near(dS(3, 1).derived.vtPbw, 9.5, 0.05) && near(500 / 118, 4.2, 0.05), 'Case 3 V_T 500 = 9.5 PBW, 4.2 actual');
+ok(Math.round(dS(3, 1).derived.pbw * 6) === 314, 'Case 3 6 mL/kg = 314');
+ok(dS(3, 2).derived.dp === 15 && near(dS(3, 2).derived.pf, 140, 0.01), 'Case 3 ΔP 15, P/F 140');
+ok(dS(4, 1).alerts.some(a => a.title.includes('顱腦損傷')) && !dS(4, 2).alerts.some(a => a.title.includes('顱腦損傷')), 'Case 4 TBI alert clears at PaCO2 42');
+ok(dS(4, 2).derived.vtPbw.toFixed(1) === '6.5', 'Case 4 V_T 6.5 mL/kg');
+ok(near(dS(5, 1).derived.vtPbw, 10.4, 0.05) && dS(5, 1).derived.autoPeep === 6, 'Case 5 V_T 10.4, Auto-PEEP 6');
+ok(dS(5, 1).alternatives.some(x => x.key === 'psv'), 'Case 5 PSV listed as alternative');
+ok(near(dS(5, 2).derived.vtPbw, 6.5, 0.05) && dS(5, 2).phenotype.sbtReady, 'Case 5 V_T 6.5, SBT ready');
+ok(dS(6, 1).params.find(x => x[0] === 'PEEP')[1].includes('20–22'), 'Case 6 Higher PEEP table FiO2 0.8 → 20–22');
+ok(near(dS(6, 2).derived.pf, 70, 0.01), 'Case 6 P/F 70');
+ok(near(dS(6, 3).derived.vtPbw, 3.3, 0.05) && near(dS(6, 3).derived.pf, 195, 0.01), 'Case 6 V_T 3.3, P/F 195');
+
+// Quiz structure
+ok(QUIZ.length === 20 && QUIZ.filter(q => q.l === 'basic').length === 10 && QUIZ.filter(q => q.l === 'adv').length === 10, '20 questions, 10 + 10');
+[0, 1, 2, 3].forEach(k => ok(QUIZ.filter(q => q.a === k).length === 5, `answer ${'ABCD'[k]} used 5 times`));
+QUIZ.forEach((q, i) => ok(q.o.length === 4 && new Set(q.o).size === 4 && q.a >= 0 && q.a < 4 && q.x && q.src, `Q${i + 1} well-formed`));
+// Quiz calculations
+ok(Math.round(VN.pbw('male', 175) * 6) === 423, 'Q1 PBW 175 cm → 423 mL');
+{ const d = VN.derive(P({ vt: 420, pplat: 28, totalPeep: 10 })); ok(d.dp === 18 && near(d.cstat, 23.3, 0.05), 'Q3 ΔP 18, Cstat 23'); }
+ok(near(rox(90, 0.8, 36), 3.13, 0.01), 'Q9 ROX 3.13');
+ok(VN.derive(P({ peep: 5, totalPeep: 15 })).autoPeep === 10, 'Q10 Auto-PEEP 10');
+ok(near(0.75 * 15, 11.25) && near((20 - 8) + (2 / 3) * 15, 22), 'Q11 Pmus 11.25, ΔPL,dyn 22');
+ok(32 - 22 === 10 && 12 - 18 === -6, 'Q14 PL 10 and −6');
+{ const vt = VN.pbw('male', 175) * 8; ok(Math.round(vt) === 565 && Math.round(18000 / vt) === 32, 'Q17 V_T 565, RR 32');
+  const w = VN.abg(7.05, 19, 5).winter; ok(w[0] === 13.5 && w[1] === 17.5, "Q17 Winter's 13.5–17.5"); }
+{ const te = (rr, lps) => 60 / rr - 0.45 / lps; ok(near(te(20, 100 / 60) - te(20, 1), 0.18, 0.005) && near(te(14, 1) - te(20, 1), 1.29, 0.005), 'Q18 Te gain +0.18 vs +1.29'); }
+
+// Mind map
+ok(VMAP.dx.length === 6 && VMAP.tx.length === 7 && VMAP.dx.concat(VMAP.tx).every(b => b.t && b.s && b.l.length >= 3), 'map branches complete');
 
 console.log(`${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
