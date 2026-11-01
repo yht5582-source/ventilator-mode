@@ -195,6 +195,9 @@ ok(32 - 22 === 10 && 12 - 18 === -6, 'Q14 PL 10 and −6');
   const w = VN.abg(7.05, 19, 5).winter; ok(w[0] === 13.5 && w[1] === 17.5, "Q17 Winter's 13.5–17.5"); }
 { const te = (rr, lps) => 60 / rr - 0.45 / lps; ok(near(te(20, 100 / 60) - te(20, 1), 0.18, 0.005) && near(te(14, 1) - te(20, 1), 1.29, 0.005), 'Q18 Te gain +0.18 vs +1.29'); }
 
+// ROX cutoffs in the engine's HFNC row match Roca 2019 and the teaching tabs
+{ const row = A({ airway: 'hfnc', pao2: 70, fio2: 0.6 }).params.find(x => x[0].startsWith('FiO₂')); ok(row[2].includes('< 2.85、< 3.47、< 3.85') && row[2].includes('≥ 4.88'), 'HFNC row ROX cutoffs'); }
+
 // Mind map
 ok(VMAP.dx.length === 6 && VMAP.tx.length === 7 && VMAP.dx.concat(VMAP.tx).every(b => b.t && b.s && b.l.length >= 3), 'map branches complete');
 
